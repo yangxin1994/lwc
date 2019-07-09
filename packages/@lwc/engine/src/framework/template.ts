@@ -12,7 +12,6 @@ import {
     isObject,
     isUndefined,
     create,
-    ArrayIndexOf,
     toString,
     forEach,
     ArrayUnshift,
@@ -21,8 +20,7 @@ import { VNode, VNodes } from '../3rdparty/snabbdom/types';
 import * as api from './api';
 import { RenderAPI } from './api';
 import { Context } from './context';
-import { SlotSet, VM, resetShadowRoot } from './vm';
-import { EmptyArray } from './utils';
+import { VM, resetShadowRoot } from './vm';
 import { isTemplateRegistered, registerTemplate } from './secure-template';
 import {
     evaluateCSS,
@@ -33,7 +31,7 @@ import {
 
 export { registerTemplate };
 export interface Template {
-    (api: RenderAPI, cmp: object, slotSet: SlotSet, ctx: Context): VNodes;
+    (api: RenderAPI, cmp: object, ctx: Context): VNodes;
 
     /**
      * The stylesheet associated with the template.
@@ -45,6 +43,11 @@ export interface Template {
      * from the template.
      */
     ids?: string[];
+
+    /**
+     * List of slot names that are defined in template.
+     */
+    slots?: string[];
 
     stylesheetTokens?: {
         /**
@@ -59,34 +62,6 @@ export interface Template {
          */
         shadowAttribute: string;
     };
-}
-const EmptySlots: SlotSet = create(null);
-
-function validateSlots(vm: VM, html: any) {
-    if (process.env.NODE_ENV === 'production') {
-        // this method should never leak to prod
-        throw new ReferenceError();
-    }
-    const { cmpSlots = EmptySlots } = vm;
-    const { slots = EmptyArray } = html;
-    for (const slotName in cmpSlots) {
-        // eslint-disable-next-line no-production-assert
-        assert.isTrue(
-            isArray(cmpSlots[slotName]),
-            `Slots can only be set to an array, instead received ${toString(
-                cmpSlots[slotName]
-            )} for slot "${slotName}" in ${vm}.`
-        );
-
-        if (slotName !== '' && ArrayIndexOf.call(slots, slotName) === -1) {
-            // TODO: #1297 - this should never really happen because the compiler should always validate
-            // eslint-disable-next-line no-production-assert
-            assert.logError(
-                `Ignoring unknown provided slot name "${slotName}" in ${vm}. Check for a typo on the slot attribute.`,
-                vm.elm
-            );
-        }
-    }
 }
 
 function validateFields(vm: VM, html: Template) {
@@ -120,7 +95,7 @@ export function evaluateTemplate(vm: VM, html: Template): Array<VNode | null> {
         );
     }
 
-    const { component, context, cmpSlots, cmpTemplate } = vm;
+    const { component, context, cmpTemplate } = vm;
     // reset the cache memoizer for template when needed
     if (html !== cmpTemplate) {
         // perf opt: do not reset the shadow root during the first rendering (there is nothing to reset)
@@ -169,10 +144,8 @@ export function evaluateTemplate(vm: VM, html: Template): Array<VNode | null> {
             isObject(context.tplCache),
             `vm.context.tplCache must be an object associated to ${cmpTemplate}.`
         );
-        // validating slots in every rendering since the allocated content might change over time
-        validateSlots(vm, html);
     }
-    const vnodes: VNodes = html.call(undefined, api, component, cmpSlots, context.tplCache!);
+    const vnodes: VNodes = html.call(undefined, api, component, context.tplCache!);
 
     const { styleVNode } = context;
     if (!isNull(styleVNode)) {

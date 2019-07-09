@@ -21,11 +21,8 @@ import {
     ArraySlice,
     create,
     isTrue,
-    isObject,
-    keys,
     StringToLowerCase,
     isFalse,
-    isArray,
 } from '../shared/language';
 import { getInternalField, getHiddenField } from '../shared/fields';
 import {
@@ -39,7 +36,7 @@ import { invokeServiceHook, Services } from './services';
 import { invokeComponentCallback } from './invoker';
 import { ShadowRootInnerHTMLSetter, ShadowRootHostGetter } from '../env/dom';
 
-import { VNodeData, VNodes, VCustomElement, VNode } from '../3rdparty/snabbdom/types';
+import { VNodeData, VNodes, VCustomElement } from '../3rdparty/snabbdom/types';
 import { Template } from './template';
 import { ComponentDef } from './def';
 import { ComponentInterface } from './component';
@@ -56,10 +53,6 @@ import { parentElementGetter, parentNodeGetter } from '../env/node';
 import { updateDynamicChildren, updateStaticChildren } from '../3rdparty/snabbdom/snabbdom';
 import { hasDynamicChildren } from './hooks';
 import { ReactiveObserver } from '../libs/mutation-tracker';
-
-export interface SlotSet {
-    [key: string]: VNodes;
-}
 
 export enum VMState {
     created,
@@ -83,11 +76,8 @@ export interface UninitializedVM {
     data: VNodeData;
     /** Shadow Children List */
     children: VNodes;
-    /** Adopted Children List */
-    aChildren: VNodes;
     velements: VCustomElement[];
     cmpProps: any;
-    cmpSlots: SlotSet;
     cmpTrack: any;
     callHook: (
         cmp: ComponentInterface | undefined,
@@ -173,7 +163,6 @@ function resetComponentStateWhenRemoved(vm: VM) {
         runDisconnectedCallback(vm);
         // Spec: https://dom.spec.whatwg.org/#concept-node-remove (step 14-15)
         runShadowChildNodesDisconnectedCallback(vm);
-        runLightChildNodesDisconnectedCallback(vm);
     }
 }
 
@@ -228,12 +217,10 @@ export function createVM(elm: HTMLElement, Ctor: ComponentConstructor, options: 
         context: create(null),
         cmpProps: create(null),
         cmpTrack: create(null),
-        cmpSlots: useSyntheticShadow ? create(null) : undefined,
         callHook,
         setHook,
         getHook,
         children: EmptyArray,
-        aChildren: EmptyArray,
         velements: EmptyArray,
         // Perf optimization to preserve the shape of this obj
         cmpTemplate: undefined,
@@ -439,6 +426,7 @@ function runShadowChildNodesDisconnectedCallback(vm: VM) {
     // reporting disconnection for every child in inverse order since they are inserted in reserved order
     for (let i = vCustomElementCollection.length - 1; i >= 0; i -= 1) {
         const elm = vCustomElementCollection[i].elm;
+        // TODO: this condition might not be important anymore
         // There are two cases where the element could be undefined:
         // * when there is an error during the construction phase, and an
         //   error boundary picks it, there is a possibility that the VCustomElement
@@ -448,37 +436,6 @@ function runShadowChildNodesDisconnectedCallback(vm: VM) {
         if (!isUndefined(elm)) {
             const childVM = getCustomElementVM(elm as HTMLElement);
             resetComponentStateWhenRemoved(childVM);
-        }
-    }
-}
-
-function runLightChildNodesDisconnectedCallback(vm: VM) {
-    if (process.env.NODE_ENV !== 'production') {
-        assert.isTrue(vm && 'cmpRoot' in vm, `${vm} is not a vm.`);
-    }
-    const { aChildren: adoptedChildren } = vm;
-    recursivelyDisconnectChildren(adoptedChildren);
-}
-
-/**
- * The recursion doesn't need to be a complete traversal of the vnode graph,
- * instead it can be partial, when a custom element vnode is found, we don't
- * need to continue into its children because by attempting to disconnect the
- * custom element itself will trigger the removal of anything slotted or anything
- * defined on its shadow.
- */
-function recursivelyDisconnectChildren(vnodes: VNodes) {
-    for (let i = 0, len = vnodes.length; i < len; i += 1) {
-        const vnode: VCustomElement | VNode | null = vnodes[i];
-        if (!isNull(vnode) && isArray(vnode.children) && !isUndefined(vnode.elm)) {
-            // vnode is a VElement with children
-            if (isUndefined((vnode as any).ctor)) {
-                // it is a VElement, just keep looking (recursively)
-                recursivelyDisconnectChildren(vnode.children);
-            } else {
-                // it is a VCustomElement, disconnect it and ignore its children
-                resetComponentStateWhenRemoved(getCustomElementVM(vnode.elm as HTMLElement));
-            }
         }
     }
 }
@@ -629,60 +586,6 @@ export function getShadowRootVM(root: ShadowRoot): VM {
         assert.isTrue(vm && 'cmpRoot' in vm, `${vm} is not a vm.`);
     }
     return getInternalField(root, ViewModelReflection) as VM;
-}
-
-// slow path routine
-// NOTE: we should probably more this routine to the synthetic shadow folder
-// and get the allocation to be cached by in the elm instead of in the VM
-export function allocateInSlot(vm: VM, children: VNodes) {
-    if (process.env.NODE_ENV !== 'production') {
-        assert.isTrue(vm && 'cmpRoot' in vm, `${vm} is not a vm.`);
-        assert.invariant(
-            isObject(vm.cmpSlots),
-            `When doing manual allocation, there must be a cmpSlots object available.`
-        );
-    }
-    const { cmpSlots: oldSlots } = vm;
-    const cmpSlots = (vm.cmpSlots = create(null));
-    for (let i = 0, len = children.length; i < len; i += 1) {
-        const vnode = children[i];
-        if (isNull(vnode)) {
-            continue;
-        }
-        const { data } = vnode;
-        const slotName = ((data.attrs && data.attrs.slot) || '') as string;
-        const vnodes: VNodes = (cmpSlots[slotName] = cmpSlots[slotName] || []);
-        // re-keying the vnodes is necessary to avoid conflicts with default content for the slot
-        // which might have similar keys. Each vnode will always have a key that
-        // starts with a numeric character from compiler. In this case, we add a unique
-        // notation for slotted vnodes keys, e.g.: `@foo:1:1`
-        vnode.key = `@${slotName}:${vnode.key}`;
-        ArrayPush.call(vnodes, vnode);
-    }
-    if (isFalse(vm.isDirty)) {
-        // We need to determine if the old allocation is really different from the new one
-        // and mark the vm as dirty
-        const oldKeys = keys(oldSlots);
-        if (oldKeys.length !== keys(cmpSlots).length) {
-            markComponentAsDirty(vm);
-            return;
-        }
-        for (let i = 0, len = oldKeys.length; i < len; i += 1) {
-            const key = oldKeys[i];
-            if (isUndefined(cmpSlots[key]) || oldSlots[key].length !== cmpSlots[key].length) {
-                markComponentAsDirty(vm);
-                return;
-            }
-            const oldVNodes = oldSlots[key];
-            const vnodes = cmpSlots[key];
-            for (let j = 0, a = cmpSlots[key].length; j < a; j += 1) {
-                if (oldVNodes[j] !== vnodes[j]) {
-                    markComponentAsDirty(vm);
-                    return;
-                }
-            }
-        }
-    }
 }
 
 export function runWithBoundaryProtection(

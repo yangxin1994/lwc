@@ -22,15 +22,15 @@ import {
     isFalse,
     toString,
     ArraySlice,
+    ArrayIndexOf,
 } from '../shared/language';
 import {
     EmptyArray,
     resolveCircularModuleDependency,
     isCircularModuleDependency,
     EmptyObject,
-    useSyntheticShadow,
 } from './utils';
-import { VM, SlotSet } from './vm';
+import { VM } from './vm';
 import { ComponentConstructor } from './component';
 import {
     VNode,
@@ -58,7 +58,6 @@ import {
     createCustomElmHook,
     updateCustomElmHook,
     updateChildrenHook,
-    allocateChildrenHook,
     removeCustomElmHook,
     markAsDynamicChildren,
 } from './hooks';
@@ -74,7 +73,7 @@ export interface CustomElementCompilerData extends ElementCompilerData {
 }
 
 export interface RenderAPI {
-    s(slotName: string, data: ElementCompilerData, children: VNodes, slotset: SlotSet): VNode;
+    s(slotName: string, data: ElementCompilerData, children: VNodes): VNode;
     h(tagName: string, data: ElementCompilerData, children: VNodes): VNode;
     c(
         tagName: string,
@@ -178,14 +177,10 @@ const CustomElementHook: Hooks = {
             markNodeFromVNode(vnode.elm as Element);
         }
         createViewModelHook(vnode);
-        allocateChildrenHook(vnode);
         createCustomElmHook(vnode);
     },
     update: (oldVnode: VCustomElement, vnode: VCustomElement) => {
         updateCustomElmHook(oldVnode, vnode);
-        // in fallback mode, the allocation will always set children to
-        // empty and delegate the real allocation to the slot elements
-        allocateChildrenHook(vnode);
         // in fallback mode, the children will be always empty, so, nothing
         // will happen, but in native, it does allocate the light dom
         updateChildrenHook(oldVnode, vnode);
@@ -313,32 +308,24 @@ export function ti(value: any): number {
 }
 
 // [s]lot element node
-export function s(
-    slotName: string,
-    data: ElementCompilerData,
-    children: VNodes,
-    slotset: SlotSet | undefined
-): VElement {
+export function s(slotName: string, data: ElementCompilerData, children: VNodes): VElement {
     if (process.env.NODE_ENV !== 'production') {
         assert.isTrue(isString(slotName), `s() 1st argument slotName must be a string.`);
         assert.isTrue(isObject(data), `s() 2nd argument data must be an object.`);
         assert.isTrue(isArray(children), `h() 3rd argument children must be an array.`);
+        // collecting slot name for owner
+        const vm = vmBeingRendered as VM;
+        const { slots = EmptyArray } = vm.cmpTemplate;
+        if (ArrayIndexOf.call(slots, slotName) === -1) {
+            // TODO: #1297 - this should never really happen because the compiler should always validate
+            // eslint-disable-next-line no-production-assert
+            assert.logError(
+                `Ignoring unknown provided slot name "${slotName}" in ${vm}. Check for a typo on the slot attribute.`,
+                vm.elm
+            );
+        }
     }
-    if (
-        !isUndefined(slotset) &&
-        !isUndefined(slotset[slotName]) &&
-        slotset[slotName].length !== 0
-    ) {
-        children = slotset[slotName];
-    }
-    const vnode = h('slot', data, children);
-    if (useSyntheticShadow) {
-        // the content of the slot has to be dynamic when in synthetic shadow mode because
-        // the `vnode.children` might be the slotted content vs default content, in which case
-        // the size and the keys are not matching.
-        markAsDynamicChildren(children);
-    }
-    return vnode;
+    return h('slot', data, children);
 }
 
 // [c]ustom element node
