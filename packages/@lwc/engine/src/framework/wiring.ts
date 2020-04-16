@@ -12,6 +12,7 @@ import { invokeComponentCallback } from './invoker';
 import { dispatchEvent } from '../env/dom';
 
 const DeprecatedWiredElementHost = '$$DeprecatedWiredElementHostKey$$';
+const DeprecatedWiredParamsMeta = '$$DeprecatedWiredParamsMetaKey$$';
 
 const WireMetaMap: Map<PropertyDescriptor, WireDef> = new Map();
 function noop(): void {}
@@ -123,6 +124,9 @@ function createConnector(vm: VM, name: string, wireDef: WireDef): WireAdapter {
     // Workaround to pass the component element associated to this wire adapter instance.
     defineProperty(dataCallback, DeprecatedWiredElementHost, {
         value: vm.elm,
+    });
+    defineProperty(dataCallback, DeprecatedWiredParamsMeta, {
+        value: params,
     });
 
     runWithBoundaryProtection(
