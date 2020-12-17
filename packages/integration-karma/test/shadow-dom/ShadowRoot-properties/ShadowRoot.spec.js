@@ -76,7 +76,14 @@ describe('restrictions', () => {
     });
 
     for (const methodName of SHADOW_ROOT_RESTRICTED) {
-        it(`should throw when accessing ShadowRoot.${methodName} in dev mode`, () => {
+        it(`should new throw when accessing a non LWC ShadowRoot.${methodName} - Vanilla`, () => {
+            const host = document.createElement('div');
+            const root = host.attachShadow({ mode: 'open' });
+
+            expect(() => root[methodName]).not.toThrow();
+        });
+
+        it(`should throw when accessing ShadowRoot.${methodName} in dev mode - LWC`, () => {
             expect(() => elm.shadowRoot[methodName]).toThrowErrorDev(
                 Error,
                 `Disallowed method "${methodName}" in ShadowRoot.`

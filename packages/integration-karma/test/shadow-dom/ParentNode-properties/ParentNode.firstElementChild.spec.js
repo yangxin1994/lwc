@@ -4,7 +4,7 @@ import Test from 'x/test';
 import Text from 'x/text';
 import Slotted from 'x/slotted';
 
-describe('ParentNode.firstElementChild', () => {
+describe('ParentNode.firstElementChild - LWC', () => {
     it('should return the first element child', () => {
         const elm = createElement('x-test', { is: Test });
         document.body.appendChild(elm);
@@ -26,5 +26,46 @@ describe('ParentNode.firstElementChild', () => {
         const container = elm.shadowRoot.querySelector('x-container');
         expect(container.firstElementChild).not.toBe(null);
         expect(container.shadowRoot.querySelector('slot').firstElementChild).toBe(null);
+    });
+});
+
+describe('ParentNode.firstElementChild - Vanilla', () => {
+    it('should return the first element child on standard Element', () => {
+        const elm = document.createElement('div');
+        const childA = document.createElement('span');
+        const childB = document.createElement('span');
+        elm.appendChild(childA);
+        elm.appendChild(childB);
+
+        expect(elm.firstElementChild).toBe(childA);
+    });
+
+    it('should return the first element child on the host element and the shadow root', () => {
+        const elm = document.createElement('div');
+        const root = elm.attachShadow({ mode: 'open' });
+        const elmChildA = document.createElement('span');
+        const elmChildB = document.createElement('span');
+        const rootChildA = document.createElement('span');
+        const rootChildB = document.createElement('span');
+        elm.appendChild(elmChildA);
+        elm.appendChild(elmChildB);
+        root.appendChild(rootChildA);
+        root.appendChild(rootChildB);
+
+        expect(elm.firstElementChild).toBe(elmChildA);
+        expect(root.firstElementChild).toBe(rootChildA);
+    });
+
+    it('should return the first element child on HTMLSlotElement', () => {
+        const elm = document.createElement('div');
+        const root = elm.attachShadow({ mode: 'open' });
+        const slot = document.createElement('slot');
+        const childA = document.createElement('span');
+        const childB = document.createElement('span');
+        root.appendChild(slot);
+        slot.appendChild(childA);
+        slot.appendChild(childB);
+
+        expect(slot.firstElementChild).toBe(childA);
     });
 });
