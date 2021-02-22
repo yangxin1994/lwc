@@ -363,8 +363,10 @@ export default function parse(source: string, state: State): TemplateParseResult
         }
 
         const lwcOpts = {};
+
         applyLwcDynamicDirective(element, lwcOpts);
         applyLwcDomDirective(element, lwcOpts);
+        applyLwcInnerHtmlDirective(element, lwcOpts);
 
         element.lwc = lwcOpts;
     }
@@ -429,13 +431,10 @@ export default function parse(source: string, state: State): TemplateParseResult
 
         if (
             lwcDomAttribute.type !== IRAttributeType.String ||
-            hasOwnProperty.call(LWCDirectiveDomMode, lwcDomAttribute.value) === false
+            lwcDomAttribute.value !== 'manual'
         ) {
-            const possibleValues = Object.keys(LWCDirectiveDomMode)
-                .map((value) => `"${value}"`)
-                .join(', or ');
             return warnOnElement(ParserDiagnostics.LWC_DOM_INVALID_VALUE, element.__original, [
-                possibleValues,
+                '"manual"',
             ]);
         }
 
@@ -443,7 +442,28 @@ export default function parse(source: string, state: State): TemplateParseResult
             return warnOnElement(ParserDiagnostics.LWC_DOM_INVALID_CONTENTS, element.__original);
         }
 
-        lwcOpts.dom = lwcDomAttribute.value as LWCDirectiveDomMode;
+        lwcOpts.dom = lwcDomAttribute.value;
+    }
+
+    function applyLwcInnerHtmlDirective(element: IRElement, lwcOpts: LWCDirectives) {
+        const lwcInnerHtmlDirective = getTemplateAttribute(element, LWC_DIRECTIVES.INNER_HTML);
+
+        if (!lwcInnerHtmlDirective) {
+            return;
+        }
+
+        removeAttribute(element, LWC_DIRECTIVES.INNER_HTML);
+
+        // TODO: Add restrictions
+        if (lwcInnerHtmlDirective.type === IRAttributeType.Boolean) {
+            throw new Error('TODO');
+        }
+
+        if (!state.secureDependencies.includes('sanitizeHtmlContent')) {
+            state.secureDependencies.push('sanitizeHtmlContent');
+        }
+
+        lwcOpts.innerHTML = lwcInnerHtmlDirective.value;
     }
 
     function validateInlineStyleElement(element: IRElement) {
