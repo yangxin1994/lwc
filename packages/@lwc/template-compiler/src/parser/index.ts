@@ -5,7 +5,6 @@
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
 import * as parse5 from 'parse5-with-errors';
-import { hasOwnProperty } from '@lwc/shared';
 
 import {
     treeAdapter,
@@ -53,7 +52,6 @@ import {
     ForEach,
     TemplateExpression,
     TemplateParseResult,
-    LWCDirectiveDomMode,
     LWCDirectives,
 } from '../shared/types';
 
