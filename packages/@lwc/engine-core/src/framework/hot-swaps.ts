@@ -238,6 +238,14 @@ export function removeActiveVM(vm: VM) {
     }
 }
 
+/**
+ * To support hot module reload(HMR), re-render every component that was created with the oldTpl
+ * template.
+ * This method will throw an exception if used in production environment
+ * @param oldTpl - Existing component template
+ * @param newTpl - Replacement component template
+ * @returns true if swap was successful, false otherwise
+ */
 export function swapTemplate(oldTpl: Template, newTpl: Template): boolean {
     if (process.env.NODE_ENV !== 'production') {
         if (isTemplateRegistered(oldTpl) && isTemplateRegistered(newTpl)) {
@@ -255,6 +263,14 @@ export function swapTemplate(oldTpl: Template, newTpl: Template): boolean {
     return false;
 }
 
+/**
+ * To support hot module reload(HMR), re-render every component that was created with the oldComponent
+ * constructor.
+ * This method will throw an exception if used in production environment
+ * @param oldComponent - Existing component constructor
+ * @param newComponent - Replacement component constructor
+ * @returns true if swap was successful, false otherwise
+ */
 export function swapComponent(
     oldComponent: LightningElementConstructor,
     newComponent: LightningElementConstructor
@@ -275,6 +291,14 @@ export function swapComponent(
     return false;
 }
 
+/**
+ * To support hot module reload(HMR), re-render every component that was created with the oldStyle
+ * stylesheet.
+ * This method will throw an exception if used in production environment
+ * @param oldStyle - Existing stylesheet factory
+ * @param newStyle - Replacement stylesheet factory
+ * @returns true if swap was successful, false otherwise
+ */
 export function swapStyle(oldStyle: StylesheetFactory, newStyle: StylesheetFactory): boolean {
     if (process.env.NODE_ENV !== 'production') {
         // TODO [#1887]: once the support for registering styles is implemented

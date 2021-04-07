@@ -18,7 +18,8 @@
     "scripts": {
         "build": "tsc --emitDeclarationOnly && rollup --config ./scripts/rollup/rollup.config.js",
         "postbuild": "node ../../../scripts/tasks/verify-treeshakable.js ./dist/index.js",
-        "clean": "rm -rf dist/ types/"
+        "clean": "rm -rf dist/ types/ doc/",
+        "doc": "typedoc --out doc/ src/index.ts"
     },
     "files": [
         "dist/",

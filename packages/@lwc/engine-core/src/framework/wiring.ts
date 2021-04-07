@@ -226,12 +226,27 @@ function createConnector(
     };
 }
 
+/**
+ * The signature of callback to be invoked by wire adapter to provide data.
+ * @typedef DataCallback
+ */
 export type DataCallback = (value: any) => void;
+/**
+ * The shape of the wire adapter configuration object.
+ * @typedef ConfigValue
+ */
 export type ConfigValue = Record<string, any>;
 
+/**
+ * The interface to be implemented by all wire adapters.
+ * @interface
+ */
 export interface WireAdapter {
+    /** callback to be invoked when a wire config change is detected */
     update(config: ConfigValue, context?: ContextValue): void;
+    /** callback to be invoked when a component is connected to the context(e.g. document) */
     connect(): void;
+    /** callback to be invoked when a component is disconnected from the context(e.g. document) */
     disconnect(): void;
 }
 
@@ -265,7 +280,12 @@ export function setAdapterToken(adapter: WireAdapterConstructor, token: string) 
 export type ContextValue = Record<string, any>;
 export type ConfigCallback = (component: LightningElement) => ConfigValue;
 
+/**
+ * The interface for a wire adapter id. This can be instantiated using the new operator.
+ * @typedef WireAdapterConstructor
+ */
 export interface WireAdapterConstructor {
+    /** The constructor accepts a callback function to be invoked when data is ready */
     new (callback: DataCallback): WireAdapter;
     configSchema?: Record<string, WireAdapterSchemaValue>;
     contextSchema?: Record<string, WireAdapterSchemaValue>;

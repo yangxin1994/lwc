@@ -20,8 +20,13 @@ import { Template, isUpdatingTemplate, getVMBeingRendered } from './template';
 const signedTemplateMap: Map<LightningElementConstructor, Template> = new Map();
 
 /**
- * INTERNAL: This function can only be invoked by compiled code. The compiler
- * will prevent this function from being imported by userland code.
+ * Associate the constituent parts of the Component with its constructor.
+ * INTERNAL: This function can only be invoked by compiled code. The compiler will prevent this
+ * function from being imported by userland code.
+ * @param Ctor Component constructor
+ * @param param1 Properties of the component to be registered
+ * @returns the registered component
+ * @private
  */
 export function registerComponent(
     Ctor: LightningElementConstructor,

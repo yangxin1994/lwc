@@ -160,19 +160,30 @@ type HTMLElementTheGoodParts = Pick<Object, 'toString'> &
         | 'title'
     >;
 
+/**
+ * The shape of the class that all Lightning Web Component(LWC) are instantiated from.
+ * @interface
+ */
 export interface LightningElement extends HTMLElementTheGoodParts, AccessibleElementProperties {
+    /** A reference to the root node of the current element's shadow tree */
     template: ShadowRoot;
+    /** The function which will return the compiled template */
     render(): Template;
+    /** Callback invoked when component is connected to the DOM */
     connectedCallback?(): void;
+    /** Callback invoked when component is disconnected from the DOM */
     disconnectedCallback?(): void;
+    /** Callback invoked after every render of the component */
     renderedCallback?(): void;
+    /** Callback invoked when a descendant component throws an error */
     errorCallback?(error: any, stack: string): void;
 }
 
 /**
  * This class is the base class for any LWC element.
  * Some elements directly extends this class, others implement it via inheritance.
- **/
+ * @returns A component instance
+ */
 // @ts-ignore
 export const LightningElement: LightningElementConstructor = function (
     this: LightningElement

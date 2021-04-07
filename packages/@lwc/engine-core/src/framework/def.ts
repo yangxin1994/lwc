@@ -168,6 +168,8 @@ function createComponentDef(Ctor: LightningElementConstructor): ComponentDef {
 /**
  * EXPERIMENTAL: This function allows for the identification of LWC constructors. This API is
  * subject to change or being removed.
+ * @param ctor - The component constructor being used to create an LWC host element.
+ * @returns true if Ctor is a LightningElement constructor, false otherwise
  */
 export function isComponentConstructor(ctor: unknown): ctor is LightningElementConstructor {
     if (!isFunction(ctor)) {
@@ -205,6 +207,15 @@ export function isComponentConstructor(ctor: unknown): ctor is LightningElementC
     return false;
 }
 
+/**
+ * Function to extract component metadata from its constructor.
+ * Starting from the Ctor, walks up the prototype chain, extracting LWC specific metadata like
+ * properties, lifecycle callbacks etc.
+ * Note: Treats any Ctor marked with `__circular__` property as having a circular reference and resolves it first.
+ *
+ * @param Ctor - The component constructor being used to create an LWC host element.
+ * @returns
+ */
 export function getComponentInternalDef(Ctor: unknown): ComponentDef {
     if (process.env.NODE_ENV !== 'production') {
         Ctor = getComponentOrSwappedComponent(Ctor as LightningElementConstructor);
@@ -256,6 +267,7 @@ interface PropDef {
     attr: string;
 }
 type PublicMethod = (...args: any[]) => any;
+
 interface PublicComponentDef {
     name: string;
     props: Record<string, PropDef>;
@@ -266,6 +278,8 @@ interface PublicComponentDef {
 /**
  * EXPERIMENTAL: This function allows for the collection of internal component metadata. This API is
  * subject to change or being removed.
+ * @param Ctor - The component constructor being used to create an LWC host element.
+ * @returns Component metadata
  */
 export function getComponentDef(Ctor: any): PublicComponentDef {
     const def = getComponentInternalDef(Ctor);

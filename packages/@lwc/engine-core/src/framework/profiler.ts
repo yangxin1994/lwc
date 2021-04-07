@@ -111,6 +111,9 @@ function detachDispatcher() {
     return currentLogOperation;
 }
 
+/**
+ * @private
+ */
 const profilerControl = {
     enableProfiler,
     disableProfiler,

@@ -18,7 +18,8 @@
     "test:integration": "lerna exec --scope integration-tests -- yarn sauce",
     "test:performance": "lerna exec --scope perf-benchmarks -- best --runner default",
     "release:publish:ci": "./scripts/release/publish.js",
-    "release:version": "./scripts/release/version.js"
+    "release:version": "./scripts/release/version.js",
+    "doc": "lerna run doc"
   },
   "devDependencies": {
     "@babel/core": "^7.13.8",
@@ -57,7 +58,8 @@
     "semver": "^7.3.5",
     "tslib": "^2.1.0",
     "typescript": "^4.2.3",
-    "worker-farm": "^1.7.0"
+    "worker-farm": "^1.7.0",
+    "typedoc": "^0.20.35"
   },
   "lint-staged": {
     "**/*.{js,ts}": "eslint",

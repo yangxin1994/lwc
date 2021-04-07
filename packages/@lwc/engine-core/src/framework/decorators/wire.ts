@@ -11,9 +11,9 @@ import { getAssociatedVM } from '../vm';
 import { WireAdapterConstructor } from '../wiring';
 
 /**
- * @wire decorator to wire fields and methods to a wire adapter in
- * LWC Components. This function implements the internals of this
- * decorator.
+ * `@wire` decorator to wire fields and methods to a wire adapter in LWC Components.
+ * This function implements the internals of this decorator.
+ * @typedef wire
  */
 export default function wire(
     _adapter: WireAdapterConstructor,

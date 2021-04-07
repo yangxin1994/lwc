@@ -13,6 +13,14 @@ interface UpgradableCustomElementConstructor extends CustomElementConstructor {
     new (upgradeCallback?: UpgradeCallback): HTMLElement;
 }
 
+/**
+ * Get a pivot custom element constructor that will allow the lwc engine to hook into the lifecycle
+ * of a custom element and apply LWC specific logic.
+ * This function will return the registered constructor if the given tag name was registered prior.
+ * @param tagName Tag name of the LWC element
+ * @param renderer The renderer to be used for the underlying dom environment
+ * @returns A custom element constructor
+ */
 export function getUpgradableConstructor(
     tagName: string,
     renderer: Renderer

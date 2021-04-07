@@ -49,6 +49,9 @@ import { updateDynamicChildren, updateStaticChildren } from '../3rdparty/snabbdo
 import { VNodes, VCustomElement, VNode } from '../3rdparty/snabbdom/types';
 import { addErrorComponentStack } from '../shared/error';
 
+/**
+ * The encapsulation mode for the shadow DOM tree
+ */
 type ShadowRootMode = 'open' | 'closed';
 
 export interface TemplateCache {
@@ -171,6 +174,11 @@ export function rerenderVM(vm: VM) {
     rehydrate(vm);
 }
 
+/**
+ * When a root lwc element(first node in the sub tree) is connected to the context(e.g document),
+ * invoke this function to render the rest of the component's shadow tree.
+ * @param elm The host element that was connected
+ */
 export function connectRootElement(elm: any) {
     const vm = getAssociatedVM(elm);
 
@@ -188,6 +196,11 @@ export function connectRootElement(elm: any) {
     endGlobalMeasure(GlobalMeasurementPhase.HYDRATE, vm);
 }
 
+/**
+ * When a root lwc element is disconnected from the context, invoke this function to clean up the
+ * component's shadow tree and invoke the disconnectedCallback of the descendants.
+ * @param elm The host element that was disconnected
+ */
 export function disconnectRootElement(elm: any) {
     const vm = getAssociatedVM(elm);
     resetComponentStateWhenRemoved(vm);
@@ -221,8 +234,12 @@ function resetComponentStateWhenRemoved(vm: VM) {
     }
 }
 
-// this method is triggered by the diffing algo only when a vnode from the
-// old vnode.children is removed from the DOM.
+/**
+ * Invoke this routine when an element is disconnected from the DOM.
+ * This method is triggered by the diffing algo only when a vnode from the
+ * old vnode.children is removed from the DOM.
+ * @param vm The vm associated with the element being disconnected
+ */
 export function removeVM(vm: VM) {
     if (process.env.NODE_ENV !== 'production') {
         assert.isTrue(
@@ -233,6 +250,14 @@ export function removeVM(vm: VM) {
     resetComponentStateWhenRemoved(vm);
 }
 
+/**
+ * Create a view model(VM) for the LWC element.
+ * This routine is the first step taken by the engine when an LWC element is created.
+ * @param elm - The host element
+ * @param def - ComponentDef containing the metadata of the LWC being created
+ * @param options - Configurable options for the element being created
+ * @returns A view model associated with the host element and the component
+ */
 export function createVM<HostNode, HostElement>(
     elm: HostElement,
     def: ComponentDef,
@@ -312,6 +337,12 @@ export function associateVM(obj: VMAssociable, vm: VM) {
     setHiddenField(obj, ViewModelReflection, vm);
 }
 
+/**
+ * Get the view model(VM) associated with the given object.
+ * In non-production environment, will throw if there is no associated VM.
+ * @param obj
+ * @returns VM if the obj has an associated view model, `undefined` otherwise
+ */
 export function getAssociatedVM(obj: VMAssociable): VM {
     const vm = getHiddenField(obj, ViewModelReflection);
 
@@ -322,6 +353,10 @@ export function getAssociatedVM(obj: VMAssociable): VM {
     return vm!;
 }
 
+/**
+ * Get the view model(VM) associated with the given object.
+ * @returns VM if the obj has an associated view model, `undefined` otherwise
+ */
 export function getAssociatedVMIfPresent(obj: VMAssociable): VM | undefined {
     const maybeVm = getHiddenField(obj, ViewModelReflection);
 

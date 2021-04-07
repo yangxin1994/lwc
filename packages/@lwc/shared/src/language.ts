@@ -80,37 +80,83 @@ export {
     StringFromCharCode,
 };
 
+/**
+ * Check if given value is a undefined
+ * @param obj value to check
+ * @returns {obj is undefined}
+ */
 export function isUndefined(obj: any): obj is undefined {
     return obj === undefined;
 }
 
+/**
+ * Check if given value is null
+ * @param obj value to check
+ * @returns {obj is null}
+ */
 export function isNull(obj: any): obj is null {
     return obj === null;
 }
 
+/**
+ * Check if given value is true
+ * @param obj value to check
+ * @returns {obj is true}
+ */
 export function isTrue(obj: any): obj is true {
     return obj === true;
 }
 
+/**
+ * Check if given value is false
+ * @param obj value to check
+ * @returns {obj is false}
+ */
 export function isFalse(obj: any): obj is false {
     return obj === false;
 }
 
+/**
+ * Check if given value is a boolean
+ * @param obj value to check
+ * @returns {obj is boolean}
+ */
 export function isBoolean(obj: any): obj is boolean {
     return typeof obj === 'boolean';
 }
 
+/**
+ * Check if given value is a function
+ * @param obj value to check
+ * @returns {obj is function}
+ */
 export function isFunction(obj: any): obj is Function {
     return typeof obj === 'function';
 }
+
+/**
+ * Check if given value is an object
+ * @param obj value to check
+ * @returns {obj is object}
+ */
 export function isObject(obj: any): obj is object {
     return typeof obj === 'object';
 }
 
+/**
+ * Check if given value is a string
+ * @param obj value to check
+ * @returns {obj is string}
+ */
 export function isString(obj: any): obj is string {
     return typeof obj === 'string';
 }
 
+/**
+ * Check if given value is a number
+ * @param obj value to check
+ * @returns {obj is number}
+ */
 export function isNumber(obj: any): obj is number {
     return typeof obj === 'number';
 }

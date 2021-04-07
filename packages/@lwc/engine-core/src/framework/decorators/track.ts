@@ -13,9 +13,10 @@ import { LightningElement } from '../base-lightning-element';
 import { isUpdatingTemplate, getVMBeingRendered } from '../template';
 
 /**
- * @track decorator function to mark field value as reactive in
- * LWC Components. This function can also be invoked directly
- * with any value to obtain the trackable version of the value.
+ * `@track` decorator function to mark field value as reactive in LWC Components.
+ * This function can also be invoked directly with any value to obtain the trackable version of the
+ * value.
+ * @typedef track
  */
 export default function track(
     target: any,

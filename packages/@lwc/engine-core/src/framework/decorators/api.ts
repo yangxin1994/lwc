@@ -19,9 +19,9 @@ import { addCallbackToNextTick } from '../utils';
 import { isUpdatingTemplate, getVMBeingRendered } from '../template';
 
 /**
- * @api decorator to mark public fields and public methods in
- * LWC Components. This function implements the internals of this
- * decorator.
+ * `@api` decorator to mark public fields and public methods in LWC Components.
+ * This function implements the internals of this decorator.
+ * @typedef api
  */
 export default function api(target: any, propertyKey: string, descriptor: PropertyDescriptor): void;
 export default function api() {

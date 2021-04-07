@@ -23,7 +23,12 @@ interface ContextProviderOptions {
     consumerDisconnectedCallback?: (consumer: ContextConsumer) => void;
 }
 
-// this is lwc internal implementation
+/**
+ * This is lwc internal implementation
+ * @param adapter The wire adapter constructor
+ * @returns
+ * @private
+ */
 export function createContextProvider(adapter: WireAdapterConstructor) {
     let adapterContextToken = getAdapterToken(adapter);
     if (!isUndefined(adapterContextToken)) {

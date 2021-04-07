@@ -11,6 +11,8 @@ import { reactiveMembrane } from './membrane';
  * EXPERIMENTAL: This function allows you to create a reactive readonly
  * membrane around any object value. This API is subject to change or
  * being removed.
+ * @param obj Value to be protected by a readonly membrane
+ * @returns A proxy which will only readonly access to the contents of obj
  */
 export function readonly(obj: any): any {
     if (process.env.NODE_ENV !== 'production') {

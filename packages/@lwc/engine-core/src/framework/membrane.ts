@@ -24,6 +24,9 @@ export const reactiveMembrane = new ObservableMembrane({
  * EXPERIMENTAL: This function implements an unwrap mechanism that
  * works for observable membrane objects. This API is subject to
  * change or being removed.
+ * @param value Value to be unwrapped
+ * @returns Unwrapped value if given value was wrapped in a membrane, otherwise returns given value
+ * @private
  */
 export const unwrap = function (value: any): any {
     const unwrapped = reactiveMembrane.unwrapProxy(value);
