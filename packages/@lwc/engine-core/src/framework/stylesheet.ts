@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: MIT
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
-import { isArray, isUndefined, ArrayJoin, ArrayPush } from '@lwc/shared';
+import { isArray, isUndefined, ArrayJoin, ArrayPush, isNull } from '@lwc/shared';
 
 import * as api from './api';
 import { VNode } from '../3rdparty/snabbdom/types';
@@ -106,12 +106,14 @@ function evaluateStylesheetsContent(
 export function getStylesheetsContent(vm: VM, template: Template): string[] {
     const { stylesheets, stylesheetTokens: tokens } = template;
     const { syntheticShadow } = vm.renderer;
+    const isLightDom = isNull(vm.cmpRoot);
 
     let content: string[] = [];
 
     if (!isUndefined(stylesheets) && !isUndefined(tokens)) {
-        const hostSelector = syntheticShadow ? `[${tokens.hostAttribute}]` : '';
-        const shadowSelector = syntheticShadow ? `[${tokens.shadowAttribute}]` : '';
+        const scopeStyles = syntheticShadow && !isLightDom;
+        const hostSelector = scopeStyles ? `[${tokens.hostAttribute}]` : '';
+        const shadowSelector = scopeStyles ? `[${tokens.shadowAttribute}]` : '';
 
         content = evaluateStylesheetsContent(
             stylesheets,

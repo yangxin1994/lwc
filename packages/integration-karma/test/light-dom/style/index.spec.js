@@ -6,14 +6,14 @@ describe('Light DOM styling', () => {
         const elm = createElement('x-container', { is: Container });
         document.body.appendChild(elm);
 
-        expect(elm.shadowRoot).toBeNull();
+        expect(elm.shadowRoot).not.toBeNull();
 
         const getColor = (elm) => getComputedStyle(elm).color;
 
-        expect(getColor(elm.querySelector('x-one p'))).toEqual('rgb(255, 0, 0)');
-        expect(getColor(elm.querySelector('x-two p'))).toEqual('rgb(255, 0, 0)');
-        expect(getColor(elm.querySelector('x-shadow').shadowRoot.querySelector('p'))).toEqual(
-            'rgb(0, 0, 0)'
-        );
+        expect(getColor(elm.shadowRoot.querySelector('x-one p'))).toEqual('rgb(255, 0, 0)');
+        expect(getColor(elm.shadowRoot.querySelector('x-two p'))).toEqual('rgb(255, 0, 0)');
+        expect(
+            getColor(elm.shadowRoot.querySelector('x-shadow').shadowRoot.querySelector('p'))
+        ).toEqual('rgb(0, 0, 0)');
     });
 });
