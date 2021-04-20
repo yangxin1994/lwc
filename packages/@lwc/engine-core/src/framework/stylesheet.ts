@@ -31,13 +31,14 @@ export type TemplateStylesheetFactories = Array<StylesheetFactory | TemplateStyl
 
 function getStylesheetTokensForLightDomElement(vm: VM): TemplateStylesheetTokens | undefined {
     // Find the nearest shadow root, check if it's synthetic. If so, grab its stylesheet tokens
-    // so that we can scope all its containing light DOM elements correctly
-    const containerVM = getAssociatedVM(vm.elm.getRootNode().host);
-    if (
-        containerVM.elm.shadowRoot &&
-        !containerVM.elm.shadowRoot.constructor.toString().includes('[native code]')
-    ) {
-        return containerVM?.cmpTemplate?.stylesheetTokens;
+    // so that we can scope all its contained light DOM elements correctly
+    const host = vm.elm.getRootNode()?.host;
+    const hostVM = host && getAssociatedVM(host);
+    const hostShadow = hostVM?.elm.shadowRoot;
+    const hostShadowIsSynthetic =
+        hostShadow && !hostShadow.constructor.toString().includes('[native code]');
+    if (hostShadowIsSynthetic) {
+        return hostVM.cmpTemplate?.stylesheetTokens;
     }
 }
 
@@ -57,9 +58,9 @@ function createShadowStyleVNode(content: string): VNode {
 export function updateSyntheticShadowAttributes(vm: VM, template: Template) {
     const { elm, context, renderer } = vm;
     const { stylesheets: newStylesheets, stylesheetTokens: newStylesheetTokens } = template;
+    const isLightDom = isNull(vm.cmpRoot);
 
-    let newHostAttribute: string | undefined;
-    let newShadowAttribute: string | undefined;
+    let newTokens: TemplateStylesheetTokens | undefined;
 
     // Reset the styling token applied to the host element.
     const oldHostAttribute = context.hostAttribute;
@@ -69,31 +70,21 @@ export function updateSyntheticShadowAttributes(vm: VM, template: Template) {
 
     // Apply the new template styling token to the host element, if the new template has any
     // associated stylesheets.
-    if (!vm.cmpRoot) {
-        // light DOM
+    if (isLightDom) {
         // All light DOM elements need to have this attribute, even if they have no styles,
         // because other light DOM elements may have styles that should bleed into them.
-        const containerTokens = getStylesheetTokensForLightDomElement(vm);
-        if (containerTokens) {
-            newHostAttribute = containerTokens.hostAttribute;
-            newShadowAttribute = containerTokens.shadowAttribute;
+        newTokens = getStylesheetTokensForLightDomElement(vm);
+    } else if (!isUndefined(newStylesheets) && newStylesheets.length !== 0) {
+        newTokens = newStylesheetTokens;
+    }
 
-            renderer.setAttribute(elm, newHostAttribute, '');
-        }
-    } else if (
-        !isUndefined(newStylesheetTokens) &&
-        !isUndefined(newStylesheets) &&
-        newStylesheets.length !== 0
-    ) {
-        newHostAttribute = newStylesheetTokens.hostAttribute;
-        newShadowAttribute = newStylesheetTokens.shadowAttribute;
-
-        renderer.setAttribute(elm, newHostAttribute, '');
+    if (newTokens) {
+        renderer.setAttribute(elm, newTokens.hostAttribute, '');
     }
 
     // Update the styling tokens present on the context object.
-    context.hostAttribute = newHostAttribute;
-    context.shadowAttribute = newShadowAttribute;
+    context.hostAttribute = newTokens?.hostAttribute;
+    context.shadowAttribute = newTokens?.shadowAttribute;
 }
 
 function evaluateStylesheetsContent(
@@ -133,7 +124,7 @@ export function getStylesheetsContent(vm: VM, template: Template): string[] {
 
     let content: string[] = [];
 
-    if (!isUndefined(stylesheets)) {
+    if (!isUndefined(stylesheets) && stylesheets.length !== 0) {
         let tokens;
 
         if (syntheticShadow) {
