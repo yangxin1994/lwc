@@ -29,18 +29,15 @@ export type StylesheetFactory = (
  */
 export type TemplateStylesheetFactories = Array<StylesheetFactory | TemplateStylesheetFactories>;
 
-function getStylesheetTokensForLightDomElement(vm: VM) {
+function getStylesheetTokensForLightDomElement(vm: VM): TemplateStylesheetTokens | undefined {
     // Find the nearest shadow root, check if it's synthetic. If so, grab its stylesheet tokens
     // so that we can scope all its containing light DOM elements correctly
     const containerVM = getAssociatedVM(vm.elm.getRootNode().host);
     if (
-        containerVM &&
-        containerVM.cmpTemplate &&
-        containerVM.cmpTemplate.stylesheetTokens &&
         containerVM.elm.shadowRoot &&
         !containerVM.elm.shadowRoot.constructor.toString().includes('[native code]')
     ) {
-        return containerVM.cmpTemplate.stylesheetTokens;
+        return containerVM?.cmpTemplate?.stylesheetTokens;
     }
 }
 
@@ -130,25 +127,21 @@ function evaluateStylesheetsContent(
 }
 
 export function getStylesheetsContent(vm: VM, template: Template): string[] {
-    const { stylesheets, stylesheetTokens: tokens } = template;
+    const { stylesheets, stylesheetTokens } = template;
     const { syntheticShadow } = vm.renderer;
     const isLightDom = isNull(vm.cmpRoot);
 
     let content: string[] = [];
 
-    if (!isUndefined(stylesheets) && !isUndefined(tokens)) {
-        let tokensToUse: TemplateStylesheetTokens | undefined;
+    if (!isUndefined(stylesheets)) {
+        let tokens: TemplateStylesheetTokens | undefined;
 
         if (syntheticShadow) {
-            if (isLightDom) {
-                tokensToUse = getStylesheetTokensForLightDomElement(vm);
-            } else {
-                tokensToUse = tokens;
-            }
+            tokens = isLightDom ? getStylesheetTokensForLightDomElement(vm) : stylesheetTokens;
         }
 
-        const hostSelector = tokensToUse ? `[${tokensToUse.hostAttribute}]` : '';
-        const shadowSelector = tokensToUse ? `[${tokensToUse.shadowAttribute}]` : '';
+        const hostSelector = tokens ? `[${tokens.hostAttribute}]` : '';
+        const shadowSelector = tokens ? `[${tokens.shadowAttribute}]` : '';
 
         content = evaluateStylesheetsContent(
             stylesheets,
