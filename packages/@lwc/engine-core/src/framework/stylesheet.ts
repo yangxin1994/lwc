@@ -8,8 +8,8 @@ import { isArray, isUndefined, ArrayJoin, ArrayPush, isNull } from '@lwc/shared'
 
 import * as api from './api';
 import { VNode } from '../3rdparty/snabbdom/types';
-import { VM } from './vm';
-import { Template } from './template';
+import { getAssociatedVM, VM } from './vm';
+import { Template, TemplateStylesheetTokens } from './template';
 import { getStyleOrSwappedStyle } from './hot-swaps';
 
 /**
@@ -28,6 +28,21 @@ export type StylesheetFactory = (
  * @import CSS declaration).
  */
 export type TemplateStylesheetFactories = Array<StylesheetFactory | TemplateStylesheetFactories>;
+
+function getStylesheetTokensForLightDomElement(vm: VM) {
+    // Find the nearest shadow root, check if it's synthetic. If so, grab its stylesheet tokens
+    // so that we can scope all its containing light DOM elements correctly
+    const containerVM = getAssociatedVM(vm.elm.getRootNode().host);
+    if (
+        containerVM &&
+        containerVM.cmpTemplate &&
+        containerVM.cmpTemplate.stylesheetTokens &&
+        containerVM.elm.shadowRoot &&
+        !containerVM.elm.shadowRoot.constructor.toString().includes('[native code]')
+    ) {
+        return containerVM.cmpTemplate.stylesheetTokens;
+    }
+}
 
 function createShadowStyleVNode(content: string): VNode {
     return api.h(
@@ -57,7 +72,18 @@ export function updateSyntheticShadowAttributes(vm: VM, template: Template) {
 
     // Apply the new template styling token to the host element, if the new template has any
     // associated stylesheets.
-    if (
+    if (!vm.cmpRoot) {
+        // light DOM
+        // All light DOM elements need to have this attribute, even if they have no styles,
+        // because other light DOM elements may have styles that should bleed into them.
+        const containerTokens = getStylesheetTokensForLightDomElement(vm);
+        if (containerTokens) {
+            newHostAttribute = containerTokens.hostAttribute;
+            newShadowAttribute = containerTokens.shadowAttribute;
+
+            renderer.setAttribute(elm, newHostAttribute, '');
+        }
+    } else if (
         !isUndefined(newStylesheetTokens) &&
         !isUndefined(newStylesheets) &&
         newStylesheets.length !== 0
@@ -111,9 +137,18 @@ export function getStylesheetsContent(vm: VM, template: Template): string[] {
     let content: string[] = [];
 
     if (!isUndefined(stylesheets) && !isUndefined(tokens)) {
-        const scopeStyles = syntheticShadow && !isLightDom;
-        const hostSelector = scopeStyles ? `[${tokens.hostAttribute}]` : '';
-        const shadowSelector = scopeStyles ? `[${tokens.shadowAttribute}]` : '';
+        let tokensToUse: TemplateStylesheetTokens | undefined;
+
+        if (syntheticShadow) {
+            if (isLightDom) {
+                tokensToUse = getStylesheetTokensForLightDomElement(vm);
+            } else {
+                tokensToUse = tokens;
+            }
+        }
+
+        const hostSelector = tokensToUse ? `[${tokensToUse.hostAttribute}]` : '';
+        const shadowSelector = tokensToUse ? `[${tokensToUse.shadowAttribute}]` : '';
 
         content = evaluateStylesheetsContent(
             stylesheets,
