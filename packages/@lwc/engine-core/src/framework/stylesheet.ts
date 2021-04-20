@@ -134,7 +134,7 @@ export function getStylesheetsContent(vm: VM, template: Template): string[] {
     let content: string[] = [];
 
     if (!isUndefined(stylesheets)) {
-        let tokens: TemplateStylesheetTokens | undefined;
+        let tokens;
 
         if (syntheticShadow) {
             tokens = isLightDom ? getStylesheetTokensForLightDomElement(vm) : stylesheetTokens;
