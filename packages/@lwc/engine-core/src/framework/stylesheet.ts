@@ -8,16 +8,9 @@ import { isArray, isUndefined, ArrayJoin, ArrayPush, isNull } from '@lwc/shared'
 
 import * as api from './api';
 import { VNode } from '../3rdparty/snabbdom/types';
-import { getAssociatedVM, VM } from './vm';
+import { VM } from './vm';
 import { Template, TemplateStylesheetTokens } from './template';
 import { getStyleOrSwappedStyle } from './hot-swaps';
-
-// In synthetic shadow, for light DOM elements in the root context, we need to scope them
-// to avoid shadow roots at the root level becoming affected by them.
-const ROOT_LIGHT_DOM_TOKENS: TemplateStylesheetTokens = {
-    hostAttribute: 'lwc-root-light-dom-host',
-    shadowAttribute: 'lwc-root-light-dom-shadow',
-};
 
 /**
  * Function producing style based on a host and a shadow selector. This function is invoked by
@@ -35,23 +28,6 @@ export type StylesheetFactory = (
  * @import CSS declaration).
  */
 export type TemplateStylesheetFactories = Array<StylesheetFactory | TemplateStylesheetFactories>;
-
-function getStylesheetTokensForLightDomElement(vm: VM): TemplateStylesheetTokens | undefined {
-    // Find the nearest shadow root, check if it's synthetic. If so, grab its stylesheet tokens
-    // so that we can scope all its contained light DOM elements correctly
-    const root = vm.elm.getRootNode();
-    if (root === document) {
-        return ROOT_LIGHT_DOM_TOKENS;
-    }
-    const host = root?.host;
-    const hostVM = host && getAssociatedVM(host);
-    const hostShadow = hostVM?.elm.shadowRoot;
-    const hostShadowIsSynthetic =
-        hostShadow && !hostShadow.constructor.toString().includes('[native code]');
-    if (hostShadowIsSynthetic) {
-        return hostVM.cmpTemplate?.stylesheetTokens;
-    }
-}
 
 function createShadowStyleVNode(content: string): VNode {
     return api.h(
@@ -81,11 +57,7 @@ export function updateSyntheticShadowAttributes(vm: VM, template: Template) {
 
     // Apply the new template styling token to the host element, if the new template has any
     // associated stylesheets.
-    if (isLightDom) {
-        // All light DOM elements need to have this attribute, even if they have no styles,
-        // because other light DOM elements may have styles that should bleed into them.
-        newTokens = getStylesheetTokensForLightDomElement(vm);
-    } else if (!isUndefined(newStylesheets) && newStylesheets.length !== 0) {
+    if (!isLightDom && !isUndefined(newStylesheets) && newStylesheets.length !== 0) {
         newTokens = newStylesheetTokens;
     }
 
@@ -136,11 +108,7 @@ export function getStylesheetsContent(vm: VM, template: Template): string[] {
     let content: string[] = [];
 
     if (!isUndefined(stylesheets) && stylesheets.length !== 0) {
-        let tokens;
-
-        if (syntheticShadow) {
-            tokens = isLightDom ? getStylesheetTokensForLightDomElement(vm) : stylesheetTokens;
-        }
+        const tokens = syntheticShadow && !isLightDom && stylesheetTokens;
 
         const hostSelector = tokens ? `[${tokens.hostAttribute}]` : '';
         const shadowSelector = tokens ? `[${tokens.shadowAttribute}]` : '';
