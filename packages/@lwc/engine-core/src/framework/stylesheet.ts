@@ -12,6 +12,13 @@ import { getAssociatedVM, VM } from './vm';
 import { Template, TemplateStylesheetTokens } from './template';
 import { getStyleOrSwappedStyle } from './hot-swaps';
 
+// In synthetic shadow, for light DOM elements in the root context, we need to scope them
+// to avoid shadow roots at the root level becoming affected by them.
+const ROOT_LIGHT_DOM_TOKENS: TemplateStylesheetTokens = {
+    hostAttribute: 'lwc-root-light-dom-host',
+    shadowAttribute: 'lwc-root-light-dom-shadow',
+};
+
 /**
  * Function producing style based on a host and a shadow selector. This function is invoked by
  * the engine with different values depending on the mode that the component is running on.
@@ -32,7 +39,11 @@ export type TemplateStylesheetFactories = Array<StylesheetFactory | TemplateStyl
 function getStylesheetTokensForLightDomElement(vm: VM): TemplateStylesheetTokens | undefined {
     // Find the nearest shadow root, check if it's synthetic. If so, grab its stylesheet tokens
     // so that we can scope all its contained light DOM elements correctly
-    const host = vm.elm.getRootNode()?.host;
+    const root = vm.elm.getRootNode();
+    if (root === document) {
+        return ROOT_LIGHT_DOM_TOKENS;
+    }
+    const host = root?.host;
     const hostVM = host && getAssociatedVM(host);
     const hostShadow = hostVM?.elm.shadowRoot;
     const hostShadowIsSynthetic =
