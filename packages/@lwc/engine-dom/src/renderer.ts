@@ -15,8 +15,8 @@ import {
     htmlPropertyToAttribute,
 } from '@lwc/shared';
 import { Renderer } from '@lwc/engine-core';
+import { insertStylesheet } from './utils/insertStylesheet';
 
-const globalStylesheets: { [content: string]: true } = create(null);
 const globalStylesheetsParentElement: Element = document.head || document.body || document;
 
 let getCustomElement, defineCustomElement, HTMLElementConstructor;
@@ -215,17 +215,11 @@ export const renderer: Renderer<Node, Element> = {
     },
 
     insertGlobalStylesheet(content: string): void {
-        if (!isUndefined(globalStylesheets[content])) {
-            return;
-        }
+        insertStylesheet(globalStylesheetsParentElement, content);
+    },
 
-        globalStylesheets[content] = true;
-
-        const elm = document.createElement('style');
-        elm.type = 'text/css';
-        elm.textContent = content;
-
-        globalStylesheetsParentElement.appendChild(elm);
+    insertStylesheet(element: Element, content: string): void {
+        insertStylesheet(element, content);
     },
 
     assertInstanceOfHTMLElement(elm: any, msg: string) {

@@ -126,8 +126,21 @@ export function getStylesheetsContent(vm: VM, template: Template): string[] {
 
 export function createStylesheet(vm: VM, stylesheets: string[]): VNode | null {
     const { renderer } = vm;
+    const isLightDom = isNull(vm.cmpRoot);
 
-    if (renderer.syntheticShadow) {
+    if (isLightDom) {
+        const root = vm.elm.getRootNode();
+        const host = root?.host;
+        for (let i = 0; i < stylesheets.length; i++) {
+            if (host) {
+                renderer.insertStylesheet(root, stylesheets[i]);
+            } else {
+                // document-level
+                renderer.insertGlobalStylesheet(stylesheets[i]);
+            }
+        }
+        return null;
+    } else if (renderer.syntheticShadow) {
         for (let i = 0; i < stylesheets.length; i++) {
             renderer.insertGlobalStylesheet(stylesheets[i]);
         }
