@@ -12,6 +12,7 @@ export function insertStylesheet(element: Element, content: string) {
     if (!isUndefined(styleContents![content])) {
         return;
     }
+    styleContents![content] = true;
 
     let style = elementsToStyleElements.get(element);
     if (isUndefined(style)) {
