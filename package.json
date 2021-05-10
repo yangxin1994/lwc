@@ -78,6 +78,7 @@
     "yarn": "1.22.5"
   },
   "resolutions": {
+    "is-plain-object": "^4.1.1",
     "micromatch": "^4.0.2",
     "meow": "^7.1.1",
     "node-fetch": "^2.6.1",
