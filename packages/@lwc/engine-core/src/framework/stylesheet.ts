@@ -9,7 +9,7 @@ import { isArray, isUndefined, ArrayJoin, ArrayPush } from '@lwc/shared';
 import * as api from './api';
 import { VNode } from '../3rdparty/snabbdom/types';
 import { VM, hasShadow } from './vm';
-import { Template, TemplateStylesheetTokens } from './template';
+import { Template, hasScopedStyles } from './template';
 import { getStyleOrSwappedStyle } from './hot-swaps';
 
 /**
@@ -29,6 +29,10 @@ export type StylesheetFactory = (
  */
 export type TemplateStylesheetFactories = Array<StylesheetFactory | TemplateStylesheetFactories>;
 
+function makeHostToken(token: string) {
+    return `${token}-host`;
+}
+
 function createInlineStyleVNode(content: string): VNode {
     return api.h(
         'style',
@@ -42,31 +46,55 @@ function createInlineStyleVNode(content: string): VNode {
     );
 }
 
-export function updateSyntheticShadowAttributes(vm: VM, template: Template) {
+export function updateScopedLightDomTokens(vm: VM, template: Template) {
     const { elm, context, renderer } = vm;
-    const { stylesheets: newStylesheets, stylesheetTokens: newStylesheetTokens } = template;
-
-    let newTokens: TemplateStylesheetTokens | undefined;
+    const { stylesheetToken: newStylesheetToken } = template;
+    let newToken: string | undefined;
 
     // Reset the styling token applied to the host element.
-    const oldHostAttribute = context.hostAttribute;
-    if (!isUndefined(oldHostAttribute)) {
-        renderer.removeAttribute(elm, oldHostAttribute);
+    const oldToken = context.stylesheetToken;
+    if (!isUndefined(oldToken)) {
+        renderer.getClassList(elm).remove(oldToken);
+    }
+
+    // Apply the new template styling token to the host element, if the new template has any
+    // associated stylesheets.
+    if (hasScopedStyles(template)) {
+        newToken = newStylesheetToken;
+    }
+
+    if (!isUndefined(newToken)) {
+        renderer.getClassList(elm).add(newToken);
+    }
+
+    // Update the styling tokens present on the context object.
+    context.stylesheetToken = newToken;
+}
+
+export function updateSyntheticShadowAttributes(vm: VM, template: Template) {
+    const { elm, context, renderer } = vm;
+    const { stylesheets: newStylesheets, stylesheetToken: newStylesheetToken } = template;
+
+    let newToken: string | undefined;
+
+    // Reset the styling token applied to the host element.
+    const oldToken = context.stylesheetToken;
+    if (!isUndefined(oldToken)) {
+        renderer.removeAttribute(elm, makeHostToken(oldToken));
     }
 
     // Apply the new template styling token to the host element, if the new template has any
     // associated stylesheets.
     if (!isUndefined(newStylesheets) && newStylesheets.length !== 0 && hasShadow(vm)) {
-        newTokens = newStylesheetTokens;
+        newToken = newStylesheetToken;
     }
 
-    if (!isUndefined(newTokens)) {
-        renderer.setAttribute(elm, newTokens.hostAttribute, '');
+    if (!isUndefined(newToken)) {
+        renderer.setAttribute(elm, makeHostToken(newToken), '');
     }
 
     // Update the styling tokens present on the context object.
-    context.hostAttribute = newTokens?.hostAttribute;
-    context.shadowAttribute = newTokens?.shadowAttribute;
+    context.stylesheetToken = newToken;
 }
 
 function evaluateStylesheetsContent(
@@ -100,7 +128,7 @@ function evaluateStylesheetsContent(
 }
 
 export function getStylesheetsContent(vm: VM, template: Template): string[] {
-    const { stylesheets, stylesheetTokens } = template;
+    const { stylesheets, stylesheetToken } = template;
     const { syntheticShadow } = vm.renderer;
 
     let content: string[] = [];
@@ -111,9 +139,9 @@ export function getStylesheetsContent(vm: VM, template: Template): string[] {
 
         // Scoping with the tokens is only necessary for synthetic shadow. For both
         // light DOM elements and native shadow, we just render the CSS as-is.
-        if (syntheticShadow && hasShadow(vm) && !isUndefined(stylesheetTokens)) {
-            hostSelector = `[${stylesheetTokens.hostAttribute}]`;
-            shadowSelector = `[${stylesheetTokens.shadowAttribute}]`;
+        if (syntheticShadow && hasShadow(vm) && !isUndefined(stylesheetToken)) {
+            hostSelector = `[${makeHostToken(stylesheetToken)}]`;
+            shadowSelector = `[${stylesheetToken}]`;
         } else {
             hostSelector = '';
             shadowSelector = '';

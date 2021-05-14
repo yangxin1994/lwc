@@ -22,6 +22,7 @@ import modComputedClassName from './modules/computed-class-attr';
 import modComputedStyle from './modules/computed-style-attr';
 import modStaticClassName from './modules/static-class-attr';
 import modStaticStyle from './modules/static-style-attr';
+import { hasScopedStyles } from './template';
 import { updateDynamicChildren, updateStaticChildren } from '../3rdparty/snabbdom/snabbdom';
 import { patchElementWithRestrictions, unlockDomMutation, lockDomMutation } from './restrictions';
 import { getComponentInternalDef } from './def';
@@ -36,6 +37,14 @@ function observeElementChildNodes(elm: Element) {
 
 function setElementShadowToken(elm: Element, token: string | undefined) {
     (elm as any).$shadowToken$ = token;
+}
+
+function setLightDomScopingTokenIfNecessary(elm: Element, owner: VM) {
+    const { cmpTemplate } = owner;
+    const token = cmpTemplate?.stylesheetToken;
+    if (!isUndefined(token) && hasScopedStyles(cmpTemplate)) {
+        owner.renderer.getClassList(elm).add(token);
+    }
 }
 
 export function updateNodeHook(oldVnode: VNode, vnode: VNode) {
@@ -99,11 +108,14 @@ enum LWCDOMMode {
 
 export function fallbackElmHook(elm: Element, vnode: VElement) {
     const { owner } = vnode;
+    if (!hasShadow(owner)) {
+        setLightDomScopingTokenIfNecessary(elm, owner);
+    }
     if (isTrue(owner.renderer.syntheticShadow) && hasShadow(owner)) {
         const {
             data: { context },
         } = vnode;
-        const { shadowAttribute } = owner.context;
+        const { stylesheetToken } = owner.context;
         if (
             !isUndefined(context) &&
             !isUndefined(context.lwc) &&
@@ -114,7 +126,7 @@ export function fallbackElmHook(elm: Element, vnode: VElement) {
         }
         // when running in synthetic shadow mode, we need to set the shadowToken value
         // into each element from the template, so they can be styled accordingly.
-        setElementShadowToken(elm, shadowAttribute);
+        setElementShadowToken(elm, stylesheetToken);
     }
     if (process.env.NODE_ENV !== 'production') {
         const {
@@ -194,11 +206,14 @@ export function createViewModelHook(elm: HTMLElement, vnode: VCustomElement) {
     }
     const { sel, mode, ctor, owner } = vnode;
     const def = getComponentInternalDef(ctor);
+    if (!hasShadow(owner)) {
+        setLightDomScopingTokenIfNecessary(elm, owner);
+    }
     if (isTrue(owner.renderer.syntheticShadow) && hasShadow(owner)) {
-        const { shadowAttribute } = owner.context;
+        const { stylesheetToken } = owner.context;
         // when running in synthetic shadow mode, we need to set the shadowToken value
         // into each element from the template, so they can be styled accordingly.
-        setElementShadowToken(elm, shadowAttribute);
+        setElementShadowToken(elm, stylesheetToken);
     }
     createVM(elm, def, {
         mode,

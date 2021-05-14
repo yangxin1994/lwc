@@ -12,13 +12,22 @@ import {
     isArray,
     isFunction,
     isNull,
+    isTrue,
+    isUndefined,
     toString,
 } from '@lwc/shared';
 import { logError } from '../shared/logger';
 import { VNode, VNodes } from '../3rdparty/snabbdom/types';
 import * as api from './api';
 import { RenderAPI } from './api';
-import { SlotSet, TemplateCache, VM, resetComponentRoot, runWithBoundaryProtection } from './vm';
+import {
+    SlotSet,
+    TemplateCache,
+    VM,
+    resetComponentRoot,
+    runWithBoundaryProtection,
+    hasShadow,
+} from './vm';
 import { EmptyArray } from './utils';
 import { isTemplateRegistered } from './secure-template';
 import {
@@ -26,19 +35,10 @@ import {
     createStylesheet,
     getStylesheetsContent,
     updateSyntheticShadowAttributes,
+    updateScopedLightDomTokens,
 } from './stylesheet';
 import { logOperationStart, logOperationEnd, OperationId, trackProfilerState } from './profiler';
 import { getTemplateOrSwappedTemplate, setActiveVM } from './hot-swaps';
-
-export interface TemplateStylesheetTokens {
-    /** HTML attribute that need to be applied to the host element. This attribute is used for
-     * the `:host` pseudo class CSS selector. */
-    hostAttribute: string;
-    /** HTML attribute that need to the applied to all the element that the template produces.
-     * This attribute is used for style encapsulation when the engine runs with synthetic
-     * shadow. */
-    shadowAttribute: string;
-}
 
 export interface Template {
     (api: RenderAPI, cmp: object, slotSet: SlotSet, cache: TemplateCache): VNodes;
@@ -47,8 +47,8 @@ export interface Template {
     slots?: string[];
     /** The stylesheet associated with the template. */
     stylesheets?: TemplateStylesheetFactories;
-    /** The stylesheet tokens used for synthetic shadow style scoping. */
-    stylesheetTokens?: TemplateStylesheetTokens;
+    /** The string used for synthetic shadow style scoping and light DOM style scoping. */
+    stylesheetToken?: string;
 }
 
 export let isUpdatingTemplate: boolean = false;
@@ -153,6 +153,9 @@ export function evaluateTemplate(vm: VM, html: Template): Array<VNode | null> {
                     if (renderer.syntheticShadow) {
                         updateSyntheticShadowAttributes(vm, html);
                     }
+                    if (!hasShadow(vm)) {
+                        updateScopedLightDomTokens(vm, html);
+                    }
 
                     // Evaluate, create stylesheet and cache the produced VNode for future
                     // re-rendering.
@@ -200,4 +203,18 @@ export function evaluateTemplate(vm: VM, html: Template): Array<VNode | null> {
         );
     }
     return vnodes;
+}
+
+export function hasScopedStyles(template: Template | null): boolean {
+    const stylesheets = template?.stylesheets;
+    if (!isUndefined(stylesheets) && stylesheets.length !== 0) {
+        for (let i = 0; i < stylesheets.length; i++) {
+            // eslint-disable-next-line lwc-internal/no-invalid-todo
+            // TODO: figure out a better way to mark stylesheets as scoped, don't recalc this over and over
+            if (isTrue((stylesheets[i] as any).$scoped$)) {
+                return true;
+            }
+        }
+    }
+    return false;
 }
