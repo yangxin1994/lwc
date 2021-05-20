@@ -149,7 +149,7 @@ module.exports = function rollupLwcCompiler(pluginOptions = {}) {
                 stylesheetConfig: mergedPluginOptions.stylesheetConfig,
                 experimentalDynamicComponent: mergedPluginOptions.experimentalDynamicComponent,
                 preserveHtmlComments: mergedPluginOptions.preserveHtmlComments,
-                cssscopeToken: scopeToken,
+                cssScopeToken: scopeToken,
             });
 
             return { code, map };
