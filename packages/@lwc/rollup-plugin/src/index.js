@@ -32,14 +32,14 @@ function isMixingJsAndTs(importerExt, importeeExt) {
     );
 }
 
-function parseQueryParamsForScopeKey(id) {
+function parseQueryParamsForScopeToken(id) {
     const [filename, query] = id.split('?', 2);
     const params = query && new URLSearchParams(query);
-    const scopeKey = params && params.get('scopeKey');
+    const scopeToken = params && params.get('scopeToken');
     return {
         filename,
         query,
-        scopeKey,
+        scopeToken,
     };
 }
 
@@ -60,8 +60,8 @@ module.exports = function rollupLwcCompiler(pluginOptions = {}) {
         },
 
         async resolveId(importee, importer) {
-            const { filename, query, scopeKey } = parseQueryParamsForScopeKey(importee);
-            if (scopeKey) {
+            const { filename, query, scopeToken } = parseQueryParamsForScopeToken(importee);
+            if (scopeToken) {
                 // handle light DOM scoped CSS
                 // Resolve without the query param. Use skipSelf to avoid infinite loops
                 const resolved = await this.resolve(filename, importer, { skipSelf: true });
@@ -110,8 +110,8 @@ module.exports = function rollupLwcCompiler(pluginOptions = {}) {
                 return EMPTY_IMPLICIT_HTML_CONTENT;
             }
 
-            const { filename, scopeKey } = parseQueryParamsForScopeKey(id);
-            if (scopeKey) {
+            const { filename, scopeToken } = parseQueryParamsForScopeToken(id);
+            if (scopeToken) {
                 id = filename; // remove query param
             }
 
@@ -121,7 +121,7 @@ module.exports = function rollupLwcCompiler(pluginOptions = {}) {
                 const exists = fs.existsSync(id);
                 if (!exists) {
                     return '';
-                } else if (scopeKey) {
+                } else if (scopeToken) {
                     // load the file ourselves without the query param
                     return fs.readFileSync(filename, 'utf-8');
                 }
@@ -136,8 +136,8 @@ module.exports = function rollupLwcCompiler(pluginOptions = {}) {
             // If we don't find the moduleId, just resolve the module name/namespace
             const moduleEntry = getModuleQualifiedName(id, mergedPluginOptions);
 
-            const { filename, scopeKey } = parseQueryParamsForScopeKey(id);
-            if (scopeKey) {
+            const { filename, scopeToken } = parseQueryParamsForScopeToken(id);
+            if (scopeToken) {
                 id = filename; // remove query param
             }
             const { code, map } = await compiler.transform(src, id, {
@@ -149,7 +149,7 @@ module.exports = function rollupLwcCompiler(pluginOptions = {}) {
                 stylesheetConfig: mergedPluginOptions.stylesheetConfig,
                 experimentalDynamicComponent: mergedPluginOptions.experimentalDynamicComponent,
                 preserveHtmlComments: mergedPluginOptions.preserveHtmlComments,
-                cssScopeKey: scopeKey,
+                cssscopeToken: scopeToken,
             });
 
             return { code, map };

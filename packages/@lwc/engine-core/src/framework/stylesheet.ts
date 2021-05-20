@@ -85,7 +85,7 @@ export function updateSyntheticShadowAttributes(vm: VM, template: Template) {
 
     // Apply the new template styling token to the host element, if the new template has any
     // associated stylesheets.
-    if (!isUndefined(newStylesheets) && newStylesheets.length !== 0 && hasShadow(vm)) {
+    if (!isUndefined(newStylesheets) && newStylesheets.length !== 0) {
         newToken = newStylesheetToken;
     }
 

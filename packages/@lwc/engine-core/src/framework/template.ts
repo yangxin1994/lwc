@@ -150,10 +150,9 @@ export function evaluateTemplate(vm: VM, html: Template): Array<VNode | null> {
                     context.tplCache = create(null);
 
                     // Update the synthetic shadow attributes on the host element if necessary.
-                    if (renderer.syntheticShadow) {
+                    if (hasShadow(vm) && renderer.syntheticShadow) {
                         updateSyntheticShadowAttributes(vm, html);
-                    }
-                    if (!hasShadow(vm)) {
+                    } else if (!hasShadow(vm)) {
                         updateScopedLightDomTokens(vm, html);
                     }
 
