@@ -57,14 +57,14 @@ export default function serialize(result: Result, config: Config): string {
 
     if (serializedStyle) {
         // inline function
-        if (config.scopeKey) {
+        if (config.scopeToken) {
             // light DOM scoped CSS, the string is always exactly the same
-            const stringifiedScopeKey = JSON.stringify(`.${config.scopeKey}`);
+            const stringifiedScopeToken = JSON.stringify(`.${config.scopeToken}`);
             // eslint-disable-next-line lwc-internal/no-invalid-todo
             // TODO: this could be made more efficient by just directly putting a string here
             buffer += `function stylesheet() {\n`;
-            buffer += `var ${HOST_SELECTOR_IDENTIFIER} = ${stringifiedScopeKey};\n`;
-            buffer += `var ${SHADOW_SELECTOR_IDENTIFIER} = ${stringifiedScopeKey};\n`;
+            buffer += `var ${HOST_SELECTOR_IDENTIFIER} = ${stringifiedScopeToken};\n`;
+            buffer += `var ${SHADOW_SELECTOR_IDENTIFIER} = ${stringifiedScopeToken};\n`;
             buffer += `var ${SHADOW_DOM_ENABLED_IDENTIFIER} = false;\n`;
             buffer += `  return ${serializedStyle};\n`;
             buffer += `}\n`;

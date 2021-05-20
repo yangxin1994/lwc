@@ -66,7 +66,7 @@ function serialize(
     )}`;
     let buffer = '';
     buffer += `import _implicitStylesheets from "${cssRelPath}";\n\n`;
-    buffer += `import _implicitScopedStylesheets from "${scopedCssRelPath}?scopeKey=${encodeURIComponent(
+    buffer += `import _implicitScopedStylesheets from "${scopedCssRelPath}?scopeToken=${encodeURIComponent(
         scopingAttribute
     )}";\n\n`;
     buffer += code;

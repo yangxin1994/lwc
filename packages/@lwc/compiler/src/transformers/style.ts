@@ -28,7 +28,7 @@ export default function styleTransform(
         outputConfig: {
             minify,
         },
-        scopeKey: config.cssScopeKey,
+        scopeToken: config.cssScopeToken,
     };
 
     let res;
