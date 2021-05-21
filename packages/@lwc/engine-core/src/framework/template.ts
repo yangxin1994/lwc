@@ -12,7 +12,6 @@ import {
     isArray,
     isFunction,
     isNull,
-    isTrue,
     isUndefined,
     toString,
 } from '@lwc/shared';
@@ -196,9 +195,9 @@ export function hasScopedStyles(template: Template | null): boolean {
     const stylesheets = template?.stylesheets;
     if (!isUndefined(stylesheets) && stylesheets.length !== 0) {
         for (let i = 0; i < stylesheets.length; i++) {
-            // eslint-disable-next-line lwc-internal/no-invalid-todo
-            // TODO: figure out a better way to mark stylesheets as scoped, don't recalc this over and over
-            if (isTrue((stylesheets[i] as any).$scoped$)) {
+            const stylesheet = stylesheets[i];
+            // Note we only have to check one level deep because *.scoped.css cannot use @import
+            if (!isArray(stylesheet) && stylesheet.sc) {
                 return true;
             }
         }

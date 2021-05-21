@@ -13,14 +13,23 @@ import { Template, hasScopedStyles } from './template';
 import { getStyleOrSwappedStyle } from './hot-swaps';
 
 /**
- * Function producing style based on a host and a shadow selector. This function is invoked by
- * the engine with different values depending on the mode that the component is running on.
+ * Object or function that generates a string or wraps the string
  */
-export type StylesheetFactory = (
-    hostSelector: string,
-    shadowSelector: string,
-    nativeShadow: boolean
-) => string;
+export type StylesheetFactory = {
+    /**
+     * Styles as a string
+     */
+    s?: string;
+    /**
+     * Function producing style based on a host and a shadow selector. This function is invoked by
+     * the engine with different values depending on the mode that the component is running on.
+     */
+    f?: (hostSelector: string, shadowSelector: string, nativeShadow: boolean) => string;
+    /**
+     * Whether the styles are scoped or not
+     */
+    sc?: boolean;
+};
 
 /**
  * The list of stylesheets associated with a template. Each entry is either a StylesheetFactory or a
@@ -116,7 +125,10 @@ function evaluateStylesheetsContent(
                 // the stylesheet, while internally, we have a replacement for it.
                 stylesheet = getStyleOrSwappedStyle(stylesheet);
             }
-            ArrayPush.call(content, stylesheet(hostSelector, shadowSelector, nativeShadow));
+            const stylesheetAsString = !isUndefined(stylesheet.s)
+                ? stylesheet.s
+                : stylesheet.f!(hostSelector, shadowSelector, nativeShadow);
+            ArrayPush.call(content, stylesheetAsString);
         }
     }
 

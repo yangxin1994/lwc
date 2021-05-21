@@ -53,28 +53,21 @@ export default function serialize(result: Result, config: Config): string {
     }
 
     const stylesheetList = importedStylesheets.map((_str, i) => `${STYLESHEET_IDENTIFIER + i}`);
-    const serializedStyle = serializeCss(result, collectVarFunctions).trim();
+    const tokens = generateCssTokens(result, collectVarFunctions);
+    const serializedStyle = config.scopeToken
+        ? generateStringFromTokens(tokens, config.scopeToken, config.scopeToken)
+        : generateExpressionFromTokens(tokens).trim();
 
     if (serializedStyle) {
-        // inline function
         if (config.scopeToken) {
-            // light DOM scoped CSS, the string is always exactly the same
-            const stringifiedScopeToken = JSON.stringify(`.${config.scopeToken}`);
-            // eslint-disable-next-line lwc-internal/no-invalid-todo
-            // TODO: this could be made more efficient by just directly putting a string here
-            buffer += `function stylesheet() {\n`;
-            buffer += `var ${HOST_SELECTOR_IDENTIFIER} = ${stringifiedScopeToken};\n`;
-            buffer += `var ${SHADOW_SELECTOR_IDENTIFIER} = ${stringifiedScopeToken};\n`;
-            buffer += `var ${SHADOW_DOM_ENABLED_IDENTIFIER} = false;\n`;
-            buffer += `  return ${serializedStyle};\n`;
-            buffer += `}\n`;
-            // eslint-disable-next-line lwc-internal/no-invalid-todo
-            // TODO: figure out a better way to mark stylesheets as scoped
-            buffer += `stylesheet.$scoped$ = true;\n`;
+            // light DOM scoped CSS, include the string directly (wrapped in an object for the benefit of hot-swaps)
+            buffer += `const stylesheet = { s: ${JSON.stringify(serializedStyle)}, sc: true };\n`;
         } else {
-            // shadow DOM or non-scoped light DOM styles
-            buffer += `function stylesheet(${HOST_SELECTOR_IDENTIFIER}, ${SHADOW_SELECTOR_IDENTIFIER}, ${SHADOW_DOM_ENABLED_IDENTIFIER}) {\n`;
-            buffer += `  return ${serializedStyle};\n`;
+            // shadow DOM or non-scoped light DOM styles, use an inline function
+            buffer += `const stylesheet = {\n`;
+            buffer += `  f: function (${HOST_SELECTOR_IDENTIFIER}, ${SHADOW_SELECTOR_IDENTIFIER}, ${SHADOW_DOM_ENABLED_IDENTIFIER}) {\n`;
+            buffer += `    return ${serializedStyle};\n`;
+            buffer += `  }\n`;
             buffer += `}\n`;
         }
 
@@ -106,6 +99,31 @@ function normalizeString(str: string) {
     return str.replace(/(\r\n\t|\n|\r\t)/gm, '').trim();
 }
 
+function generateStringFromTokens(tokens: Token[], hostSelector: string, shadowSelector: string) {
+    if (tokens.length === 0) {
+        return '';
+    }
+    return reduceTokens(tokens)
+        .map(({ type, value }) => {
+            if (type === TokenType.expression) {
+                throw new Error('cannot handle expressions here');
+            }
+            if (type === TokenType.identifier) {
+                switch (value) {
+                    case HOST_SELECTOR_IDENTIFIER:
+                        return `.${hostSelector}`;
+                    case SHADOW_SELECTOR_IDENTIFIER:
+                        return `.${shadowSelector}`;
+                    default:
+                        throw new Error('Unknown identifier: ' + value);
+                }
+            }
+            return value;
+        })
+        .join('')
+        .trim();
+}
+
 function generateExpressionFromTokens(tokens: Token[]): string {
     const serializedTokens = reduceTokens(tokens).map(({ type, value }) =>
         type === TokenType.text ? JSON.stringify(value) : value
@@ -123,7 +141,7 @@ function generateExpressionFromTokens(tokens: Token[]): string {
     }
 }
 
-function serializeCss(result: Result, collectVarFunctions: boolean): string {
+function generateCssTokens(result: Result, collectVarFunctions: boolean): Token[] {
     const tokens: Token[] = [];
     let currentRuleTokens: Token[] = [];
     let tmpHostExpression: string | null;
@@ -188,7 +206,7 @@ function serializeCss(result: Result, collectVarFunctions: boolean): string {
         }
     });
 
-    return generateExpressionFromTokens(tokens);
+    return tokens;
 }
 
 // TODO [#1288]: this code needs refactor, it could be simpler by using a native post-css walker
