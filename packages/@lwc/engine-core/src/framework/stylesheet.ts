@@ -46,51 +46,47 @@ function createInlineStyleVNode(content: string): VNode {
     );
 }
 
-export function updateScopedLightDomTokens(vm: VM, template: Template) {
-    const { elm, context, renderer } = vm;
-    const { stylesheetToken: newStylesheetToken } = template;
-    let newToken: string | undefined;
-
-    // Reset the styling token applied to the host element.
-    const oldToken = context.stylesheetToken;
-    if (!isUndefined(oldToken)) {
-        renderer.getClassList(elm).remove(oldToken);
-    }
-
-    // Apply the new template styling token to the host element, if the new template has any
-    // associated stylesheets.
-    if (hasScopedStyles(template)) {
-        newToken = newStylesheetToken;
-    }
-
-    if (!isUndefined(newToken)) {
-        renderer.getClassList(elm).add(newToken);
-    }
-
-    // Update the styling tokens present on the context object.
-    context.stylesheetToken = newToken;
-}
-
-export function updateSyntheticShadowAttributes(vm: VM, template: Template) {
+export function updateStylesheetToken(vm: VM, template: Template) {
     const { elm, context, renderer } = vm;
     const { stylesheets: newStylesheets, stylesheetToken: newStylesheetToken } = template;
+    const isSyntheticShadow = hasShadow(vm) && renderer.syntheticShadow;
+    const isLightDom = !hasShadow(vm);
+
+    if (!isSyntheticShadow && !isLightDom) {
+        return; // nothing to do for native shadow DOM
+    }
 
     let newToken: string | undefined;
 
     // Reset the styling token applied to the host element.
     const oldToken = context.stylesheetToken;
     if (!isUndefined(oldToken)) {
-        renderer.removeAttribute(elm, makeHostToken(oldToken));
+        if (isLightDom) {
+            renderer.getClassList(elm).remove(oldToken);
+        } else {
+            // synthetic shadow
+            renderer.removeAttribute(elm, makeHostToken(oldToken));
+        }
     }
 
     // Apply the new template styling token to the host element, if the new template has any
-    // associated stylesheets.
-    if (!isUndefined(newStylesheets) && newStylesheets.length !== 0) {
+    // associated stylesheets. In the case of light DOM, also ensure there is at least one scoped stylesheet.
+    if (
+        !isUndefined(newStylesheets) &&
+        newStylesheets.length !== 0 &&
+        (isSyntheticShadow || hasScopedStyles(template))
+    ) {
         newToken = newStylesheetToken;
     }
 
+    // Set the new styling token on the host element
     if (!isUndefined(newToken)) {
-        renderer.setAttribute(elm, makeHostToken(newToken), '');
+        if (isLightDom) {
+            renderer.getClassList(elm).add(newToken);
+        } else {
+            // synthetic shadow
+            renderer.setAttribute(elm, makeHostToken(newToken), '');
+        }
     }
 
     // Update the styling tokens present on the context object.

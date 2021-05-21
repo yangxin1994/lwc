@@ -20,22 +20,14 @@ import { logError } from '../shared/logger';
 import { VNode, VNodes } from '../3rdparty/snabbdom/types';
 import * as api from './api';
 import { RenderAPI } from './api';
-import {
-    SlotSet,
-    TemplateCache,
-    VM,
-    resetComponentRoot,
-    runWithBoundaryProtection,
-    hasShadow,
-} from './vm';
+import { SlotSet, TemplateCache, VM, resetComponentRoot, runWithBoundaryProtection } from './vm';
 import { EmptyArray } from './utils';
 import { isTemplateRegistered } from './secure-template';
 import {
     TemplateStylesheetFactories,
     createStylesheet,
     getStylesheetsContent,
-    updateSyntheticShadowAttributes,
-    updateScopedLightDomTokens,
+    updateStylesheetToken,
 } from './stylesheet';
 import { logOperationStart, logOperationEnd, OperationId, trackProfilerState } from './profiler';
 import { getTemplateOrSwappedTemplate, setActiveVM } from './hot-swaps';
@@ -122,7 +114,7 @@ export function evaluateTemplate(vm: VM, html: Template): Array<VNode | null> {
         },
         () => {
             // job
-            const { component, context, cmpSlots, cmpTemplate, tro, renderer } = vm;
+            const { component, context, cmpSlots, cmpTemplate, tro } = vm;
             tro.observe(() => {
                 // Reset the cache memoizer for template when needed.
                 if (html !== cmpTemplate) {
@@ -150,11 +142,7 @@ export function evaluateTemplate(vm: VM, html: Template): Array<VNode | null> {
                     context.tplCache = create(null);
 
                     // Update the synthetic shadow attributes on the host element if necessary.
-                    if (hasShadow(vm) && renderer.syntheticShadow) {
-                        updateSyntheticShadowAttributes(vm, html);
-                    } else if (!hasShadow(vm)) {
-                        updateScopedLightDomTokens(vm, html);
-                    }
+                    updateStylesheetToken(vm, html);
 
                     // Evaluate, create stylesheet and cache the produced VNode for future
                     // re-rendering.
