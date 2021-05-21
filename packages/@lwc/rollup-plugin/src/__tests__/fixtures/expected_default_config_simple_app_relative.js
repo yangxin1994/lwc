@@ -1,9 +1,11 @@
 (function (lwc) {
     'use strict';
 
-    function stylesheet(hostSelector, shadowSelector, nativeShadow) {
-      return (nativeShadow ? ":host {color: var(--lwc-my-color);}" : [hostSelector, " {color: var(--lwc-my-color);}"].join(''));
-    }
+    const stylesheet = {
+      f: function (hostSelector, shadowSelector, nativeShadow) {
+        return (nativeShadow ? ":host {color: var(--lwc-my-color);}" : [hostSelector, " {color: var(--lwc-my-color);}"].join(''));
+      }
+    };
     var _implicitStylesheets = [stylesheet];
 
     function tmpl$1($api, $cmp, $slotset, $ctx) {

@@ -5,9 +5,11 @@
 
     var varResolver__default = /*#__PURE__*/_interopDefaultLegacy(varResolver);
 
-    function stylesheet(hostSelector, shadowSelector, nativeShadow) {
-      return (nativeShadow ? [":host {color: ", varResolver__default['default']("--lwc-my-color"), ";}"].join('') : [hostSelector, " {color: ", varResolver__default['default']("--lwc-my-color"), ";}"].join(''));
-    }
+    const stylesheet = {
+      f: function (hostSelector, shadowSelector, nativeShadow) {
+        return (nativeShadow ? [":host {color: ", varResolver__default['default']("--lwc-my-color"), ";}"].join('') : [hostSelector, " {color: ", varResolver__default['default']("--lwc-my-color"), ";}"].join(''));
+      }
+    };
     var _implicitStylesheets = [stylesheet];
 
     function tmpl$1($api, $cmp, $slotset, $ctx) {

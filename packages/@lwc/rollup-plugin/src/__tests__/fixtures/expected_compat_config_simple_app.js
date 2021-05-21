@@ -66,10 +66,11 @@
 
   var __concat = Proxy.concat;
 
-  function stylesheet(hostSelector, shadowSelector, nativeShadow) {
-    return nativeShadow ? ":host {color: var(--lwc-my-color);}" : __callKey1([hostSelector, " {color: var(--lwc-my-color);}"], "join", '');
-  }
-
+  var stylesheet = {
+    f: function f(hostSelector, shadowSelector, nativeShadow) {
+      return nativeShadow ? ":host {color: var(--lwc-my-color);}" : __callKey1([hostSelector, " {color: var(--lwc-my-color);}"], "join", '');
+    }
+  };
   var _implicitStylesheets = [stylesheet];
 
   function tmpl$1($api, $cmp, $slotset, $ctx) {
