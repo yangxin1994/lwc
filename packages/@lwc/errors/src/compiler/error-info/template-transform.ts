@@ -506,4 +506,10 @@ export const ParserDiagnostics = {
         level: DiagnosticLevel.Error,
         url: '',
     },
+    NO_DUPLICATE_SLOTS: {
+        code: 1136,
+        message: 'Slot with name "{0}" cannot be duplicated in the same template',
+        level: DiagnosticLevel.Error,
+        url: '',
+    },
 };
