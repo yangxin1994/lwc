@@ -2,7 +2,7 @@
     "warnings": [
         {
             "code": 1136,
-            "message": "LWC1136: Slot with name \"\" cannot be duplicated in the same template",
+            "message": "LWC1136: Invalid duplicate slot (default).",
             "level": 1,
             "location": {
                 "line": 3,

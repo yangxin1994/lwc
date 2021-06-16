@@ -735,7 +735,13 @@ export default function parse(source: string, state: State): TemplateParseResult
         element.slotName = name;
 
         if (state.slots.includes(name)) {
-            return warnOnElement(ParserDiagnostics.NO_DUPLICATE_SLOTS, element.__original, [name]);
+            return warnOnElement(ParserDiagnostics.NO_DUPLICATE_SLOTS, element.__original, [
+                name === '' ? 'default' : `name="${name}"`,
+            ]);
+        } else if (isInIteration(element)) {
+            return warnOnElement(ParserDiagnostics.NO_SLOTS_IN_ITERATOR, element.__original, [
+                name === '' ? 'default' : `name="${name}"`,
+            ]);
         }
         state.slots.push(name);
     }
