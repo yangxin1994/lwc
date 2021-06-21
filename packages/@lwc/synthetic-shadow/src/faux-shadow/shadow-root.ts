@@ -35,7 +35,12 @@ import {
 } from './traverse';
 import { getTextContent } from '../3rdparty/polymer/text-content';
 import { createStaticNodeList } from '../shared/static-node-list';
-import { DocumentPrototypeActiveElement, elementFromPoint, createComment } from '../env/document';
+import {
+    DocumentPrototypeActiveElement,
+    elementFromPoint,
+    createComment,
+    elementsFromPoint,
+} from '../env/document';
 import {
     compareDocumentPosition,
     DOCUMENT_POSITION_CONTAINED_BY,
@@ -237,8 +242,20 @@ const ShadowRootDescriptors = {
         writable: true,
         enumerable: true,
         configurable: true,
-        value(this: SyntheticShadowRootInterface, _left: number, _top: number): Element[] {
-            throw new Error('Disallowed method "elementsFromPoint" on ShadowRoot.');
+        value(this: SyntheticShadowRootInterface, left: number, top: number): Element[] {
+            const host = getHost(this);
+            const doc = getOwnerDocument(host);
+            const elements = elementsFromPoint.call(doc, left, top);
+            const retargetedElements = [];
+            const retargetedElementsSet = new Set();
+            for (let i = 0; i < elements.length; i++) {
+                const element = retarget(this, pathComposer(elements[i], true)) as Element | null;
+                if (!isNull(element) && !retargetedElementsSet.has(element)) {
+                    retargetedElementsSet.add(element);
+                    retargetedElements.push(element);
+                }
+            }
+            return retargetedElements;
         },
     },
     getSelection: {

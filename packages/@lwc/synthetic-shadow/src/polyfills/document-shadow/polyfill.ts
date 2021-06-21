@@ -15,6 +15,7 @@ import {
 } from '@lwc/shared';
 import {
     elementFromPoint,
+    elementsFromPoint,
     DocumentPrototypeActiveElement,
     getElementById as documentGetElementById,
     getElementsByClassName as documentGetElementsByClassName,
@@ -42,6 +43,22 @@ function elemFromPoint(this: Document, left: number, top: number) {
 
 // https://github.com/Microsoft/TypeScript/issues/14139
 Document.prototype.elementFromPoint = elemFromPoint as (left: number, top: number) => Element;
+
+function elemsFromPoint(this: Document, left: number, top: number) {
+    const elements = elementsFromPoint.call(this, left, top);
+    const retargetedElements = [];
+    const retargetedElementsSet = new Set();
+    for (let i = 0; i < elements.length; i++) {
+        const element = retarget(this, pathComposer(elements[i], true)) as Element | null;
+        if (!isNull(element) && !retargetedElementsSet.has(element)) {
+            retargetedElementsSet.add(element);
+            retargetedElements.push(element);
+        }
+    }
+    return retargetedElements;
+}
+
+Document.prototype.elementsFromPoint = elemsFromPoint as (left: number, top: number) => Element[];
 
 // Go until we reach to top of the LWC tree
 defineProperty(Document.prototype, 'activeElement', {
