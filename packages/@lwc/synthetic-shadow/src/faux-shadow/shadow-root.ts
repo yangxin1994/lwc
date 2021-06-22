@@ -247,12 +247,27 @@ const ShadowRootDescriptors = {
             const doc = getOwnerDocument(host);
             const elements = elementsFromPoint.call(doc, left, top);
             const retargetedElements = [];
-            const retargetedElementsSet = new Set();
+
+            const getAllRootNodes = (element: Node) => {
+                const rootNodes = [];
+                let currentRootNode = element.getRootNode();
+                while (currentRootNode) {
+                    rootNodes.push(currentRootNode);
+                    currentRootNode = (currentRootNode as any)?.host?.getRootNode();
+                }
+                return rootNodes;
+            };
+
+            const rootNodes = getAllRootNodes(this);
+
+            const isInThisShadowTree = (element: Element) => {
+                const otherRootNodes = getAllRootNodes(element);
+                return otherRootNodes.every((node) => rootNodes.includes(node));
+            };
+
             for (let i = 0; i < elements.length; i++) {
-                const element = retarget(this, pathComposer(elements[i], true)) as Element | null;
-                if (!isNull(element) && !retargetedElementsSet.has(element)) {
-                    retargetedElementsSet.add(element);
-                    retargetedElements.push(element);
+                if (isInThisShadowTree(elements[i])) {
+                    retargetedElements.push(elements[i]);
                 }
             }
             return retargetedElements;
