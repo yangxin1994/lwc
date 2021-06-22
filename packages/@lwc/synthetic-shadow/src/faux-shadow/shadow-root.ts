@@ -223,7 +223,7 @@ const ShadowRootDescriptors = {
         writable: true,
         enumerable: true,
         configurable: true,
-        value(this: SyntheticShadowRootInterface, left: number, top: number) {
+        value(this: SyntheticShadowRootInterface, left: number, top: number): Element | null {
             const host = getHost(this);
             const doc = getOwnerDocument(host);
             return elementFromPoint(this, doc, left, top);

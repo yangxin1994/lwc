@@ -1,4 +1,16 @@
+import { isUndefined } from '@lwc/shared';
 import { elementsFromPoint as nativeElementsFromPoint } from '../env/document';
+import { isSyntheticSlotElement } from '../faux-shadow/traverse';
+
+function getAllRootNodes(node: Node) {
+    const rootNodes = [];
+    let currentRootNode = node.getRootNode();
+    while (!isUndefined(currentRootNode)) {
+        rootNodes.push(currentRootNode);
+        currentRootNode = (currentRootNode as ShadowRoot).host?.getRootNode();
+    }
+    return rootNodes;
+}
 
 export function elementsFromPoint(
     context: Node,
@@ -7,17 +19,7 @@ export function elementsFromPoint(
     top: number
 ): Element[] {
     const elements = nativeElementsFromPoint.call(doc, left, top);
-    const retargetedElements = [];
-
-    const getAllRootNodes = (element: Node) => {
-        const rootNodes = [];
-        let currentRootNode = element.getRootNode();
-        while (currentRootNode) {
-            rootNodes.push(currentRootNode);
-            currentRootNode = (currentRootNode as any)?.host?.getRootNode();
-        }
-        return rootNodes;
-    };
+    const result = [];
 
     const rootNodes = getAllRootNodes(context);
 
@@ -27,9 +29,10 @@ export function elementsFromPoint(
     };
 
     for (let i = 0; i < elements.length; i++) {
-        if (isInThisShadowTree(elements[i])) {
-            retargetedElements.push(elements[i]);
+        const element = elements[i];
+        if (isInThisShadowTree(element) && !isSyntheticSlotElement(element)) {
+            result.push(element);
         }
     }
-    return retargetedElements;
+    return result;
 }
