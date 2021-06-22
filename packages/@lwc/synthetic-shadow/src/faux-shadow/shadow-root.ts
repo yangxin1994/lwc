@@ -35,12 +35,7 @@ import {
 } from './traverse';
 import { getTextContent } from '../3rdparty/polymer/text-content';
 import { createStaticNodeList } from '../shared/static-node-list';
-import {
-    DocumentPrototypeActiveElement,
-    elementFromPoint,
-    createComment,
-    elementsFromPoint,
-} from '../env/document';
+import { DocumentPrototypeActiveElement, createComment } from '../env/document';
 import {
     compareDocumentPosition,
     DOCUMENT_POSITION_CONTAINED_BY,
@@ -56,12 +51,12 @@ import {
 import { isInstanceOfNativeShadowRoot, isNativeShadowRootDefined } from '../env/shadow-root';
 import { createStaticHTMLCollection } from '../shared/static-html-collection';
 import { getOuterHTML } from '../3rdparty/polymer/outer-html';
-import { retarget } from '../3rdparty/polymer/retarget';
-import { pathComposer } from '../3rdparty/polymer/path-composer';
 import { getInternalChildNodes } from './node';
 import { innerHTMLSetter } from '../env/element';
 import { setNodeKey, setNodeOwnerKey } from '../shared/node-ownership';
 import { getOwnerDocument } from '../shared/utils';
+import { elementFromPoint } from './element-from-point';
+import { elementsFromPoint } from './elements-from-point';
 
 const InternalSlot = createHiddenField<ShadowRootRecord>('shadowRecord', 'synthetic-shadow');
 const { createDocumentFragment } = document;
@@ -231,11 +226,7 @@ const ShadowRootDescriptors = {
         value(this: SyntheticShadowRootInterface, left: number, top: number) {
             const host = getHost(this);
             const doc = getOwnerDocument(host);
-            const element = elementFromPoint.call(doc, left, top);
-            if (isNull(element)) {
-                return element;
-            }
-            return retarget(this, pathComposer(element, true)) as Element | null;
+            return elementFromPoint(this, doc, left, top);
         },
     },
     elementsFromPoint: {
@@ -245,32 +236,7 @@ const ShadowRootDescriptors = {
         value(this: SyntheticShadowRootInterface, left: number, top: number): Element[] {
             const host = getHost(this);
             const doc = getOwnerDocument(host);
-            const elements = elementsFromPoint.call(doc, left, top);
-            const retargetedElements = [];
-
-            const getAllRootNodes = (element: Node) => {
-                const rootNodes = [];
-                let currentRootNode = element.getRootNode();
-                while (currentRootNode) {
-                    rootNodes.push(currentRootNode);
-                    currentRootNode = (currentRootNode as any)?.host?.getRootNode();
-                }
-                return rootNodes;
-            };
-
-            const rootNodes = getAllRootNodes(this);
-
-            const isInThisShadowTree = (element: Element) => {
-                const otherRootNodes = getAllRootNodes(element);
-                return otherRootNodes.every((node) => rootNodes.includes(node));
-            };
-
-            for (let i = 0; i < elements.length; i++) {
-                if (isInThisShadowTree(elements[i])) {
-                    retargetedElements.push(elements[i]);
-                }
-            }
-            return retargetedElements;
+            return elementsFromPoint(this, doc, left, top);
         },
     },
     getSelection: {

@@ -14,8 +14,6 @@ import {
     isUndefined,
 } from '@lwc/shared';
 import {
-    elementFromPoint,
-    elementsFromPoint,
     DocumentPrototypeActiveElement,
     getElementById as documentGetElementById,
     getElementsByClassName as documentGetElementsByClassName,
@@ -25,40 +23,24 @@ import {
     querySelectorAll as documentQuerySelectorAll,
 } from '../../env/document';
 import { parentElementGetter } from '../../env/node';
-import { retarget } from '../../3rdparty/polymer/retarget';
-import { pathComposer } from '../../3rdparty/polymer/path-composer';
 import { getNodeOwnerKey } from '../../shared/node-ownership';
 import { createStaticNodeList } from '../../shared/static-node-list';
 import { createStaticHTMLCollection } from '../../shared/static-html-collection';
 import { arrayFromCollection, isGlobalPatchingSkipped } from '../../shared/utils';
+import { elementFromPoint } from '../../faux-shadow/element-from-point';
+import { elementsFromPoint } from '../../faux-shadow/elements-from-point';
 
 function elemFromPoint(this: Document, left: number, top: number) {
-    const element = elementFromPoint.call(this, left, top);
-    if (isNull(element)) {
-        return element;
-    }
-
-    return retarget(this, pathComposer(element, true)) as Element | null;
+    return elementFromPoint(this, this, left, top);
 }
 
-// https://github.com/Microsoft/TypeScript/issues/14139
-Document.prototype.elementFromPoint = elemFromPoint as (left: number, top: number) => Element;
+Document.prototype.elementFromPoint = elemFromPoint;
 
 function elemsFromPoint(this: Document, left: number, top: number) {
-    const elements = elementsFromPoint.call(this, left, top);
-    const retargetedElements = [];
-    const retargetedElementsSet = new Set();
-    for (let i = 0; i < elements.length; i++) {
-        const element = retarget(this, pathComposer(elements[i], true)) as Element | null;
-        if (!isNull(element) && !retargetedElementsSet.has(element)) {
-            retargetedElementsSet.add(element);
-            retargetedElements.push(element);
-        }
-    }
-    return retargetedElements;
+    return elementsFromPoint(this, this, left, top);
 }
 
-Document.prototype.elementsFromPoint = elemsFromPoint as (left: number, top: number) => Element[];
+Document.prototype.elementsFromPoint = elemsFromPoint;
 
 // Go until we reach to top of the LWC tree
 defineProperty(Document.prototype, 'activeElement', {

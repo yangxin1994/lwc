@@ -3,12 +3,15 @@ import Container from 'x/container';
 
 function test(element, expectedElementsFromPoint) {
     const { x, y } = element.getBoundingClientRect();
-    const elementsFromPoint = element.getRootNode().elementsFromPoint(x, y);
+    const rootNode = element.getRootNode();
+    const elementsFromPoint = rootNode.elementsFromPoint(x, y);
     expect(elementsFromPoint).toEqual(expectedElementsFromPoint);
+    const elementFromPoint = rootNode.elementFromPoint(x, y);
+    expect(elementFromPoint).toEqual(expectedElementsFromPoint[0]);
 }
 
 describe('ShadowRoot.elementsFromPoint', () => {
-    it('has correct elementsFromPoint', () => {
+    it('has correct elementsFromPoint and elementFromPoint', () => {
         const elm = createElement('x-container', { is: Container });
         document.body.appendChild(elm);
 
