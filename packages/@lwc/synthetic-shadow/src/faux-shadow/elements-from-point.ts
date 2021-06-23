@@ -1,4 +1,4 @@
-import { isUndefined } from '@lwc/shared';
+import { isNull, isUndefined } from '@lwc/shared';
 import { elementsFromPoint as nativeElementsFromPoint } from '../env/document';
 import { isSyntheticSlotElement } from '../faux-shadow/traverse';
 
@@ -18,7 +18,7 @@ export function elementsFromPoint(
     left: number,
     top: number
 ): Element[] {
-    const elements = nativeElementsFromPoint.call(doc, left, top);
+    const elements: Element[] | null = nativeElementsFromPoint.call(doc, left, top);
     const result = [];
 
     const rootNodes = getAllRootNodes(context);
@@ -28,10 +28,13 @@ export function elementsFromPoint(
         return otherRootNodes.every((node) => rootNodes.includes(node));
     };
 
-    for (let i = 0; i < elements.length; i++) {
-        const element = elements[i];
-        if (isInThisShadowTree(element) && !isSyntheticSlotElement(element)) {
-            result.push(element);
+    if (!isNull(elements)) {
+        // can be null in IE https://developer.mozilla.org/en-US/docs/Web/API/Document/elementsFromPoint#browser_compatibility
+        for (let i = 0; i < elements.length; i++) {
+            const element = elements[i];
+            if (isInThisShadowTree(element) && !isSyntheticSlotElement(element)) {
+                result.push(element);
+            }
         }
     }
     return result;

@@ -1,16 +1,54 @@
 import { createElement } from 'lwc';
 import Container from 'x/container';
 
-function test(element, expectedElementsFromPoint) {
-    const { x, y } = element.getBoundingClientRect();
-    const rootNode = element.getRootNode();
-    const elementsFromPoint = rootNode.elementsFromPoint(x, y);
-    expect(elementsFromPoint).toEqual(expectedElementsFromPoint);
-    const elementFromPoint = rootNode.elementFromPoint(x, y);
-    expect(elementFromPoint).toEqual(expectedElementsFromPoint[0]);
-}
-
 describe('ShadowRoot.elementsFromPoint', () => {
+    let hasIEBehavior;
+    let hasSafariBehavior;
+    let hasFirefoxNativeShadowBehavior;
+    // The browsers disagree on whether elements _above_ the shadow root should also be included
+    // when calling shadowRoot.elementsFromPoint(). Firefox only returns elements inside of that
+    // exact shadow root, whereas Chrome and Safari return elements above (outside) of that root.
+    // This function returns true if the browser only includes elements within that shadow root.
+    beforeAll(() => {
+        hasIEBehavior = (() => {
+            return typeof document.msElementsFromPoint === 'function';
+        })();
+        hasSafariBehavior =
+            /Safari/.test(navigator.userAgent) && !/Chrome/.test(navigator.userAgent);
+        hasFirefoxNativeShadowBehavior = (() => {
+            if (process.env.COMPAT || !process.env.NATIVE_SHADOW) {
+                return false;
+            }
+            const div = document.createElement('div');
+            div.attachShadow({ mode: 'open' }).innerHTML = '<div>foo</div>';
+            document.body.appendChild(div);
+            const { left, right } = div.shadowRoot.querySelector('div').getBoundingClientRect();
+            const elements = div.shadowRoot.elementsFromPoint(left, right);
+            document.body.removeChild(div);
+            return elements.length === 1;
+        })();
+    });
+
+    function test(element, expectedElements, safariExpectedElements) {
+        const { left, right, width, height } = element.getBoundingClientRect();
+        const rootNode = element.getRootNode();
+        const elementsFromPoint = rootNode.elementsFromPoint(left + width / 2, right + height / 2);
+
+        if (hasFirefoxNativeShadowBehavior) {
+            expectedElements = expectedElements.filter(
+                (el) => el.getRootNode() === element.getRootNode()
+            );
+        } else if (hasIEBehavior) {
+            expectedElements = [];
+        } else if (hasSafariBehavior) {
+            expectedElements = safariExpectedElements || expectedElements;
+        }
+
+        expect(elementsFromPoint).toEqual(expectedElements);
+        // const elementFromPoint = rootNode.elementFromPoint(x, y);
+        // expect(elementFromPoint).toEqual(expectedElementsFromPoint[0]);
+    }
+
     it('has correct elementsFromPoint and elementFromPoint', () => {
         const elm = createElement('x-container', { is: Container });
         document.body.appendChild(elm);
@@ -30,32 +68,30 @@ describe('ShadowRoot.elementsFromPoint', () => {
 
         test(elm, [elm, body, html]);
         test(h1, [h1, elm, body, html]);
-        test(inContainer, [slottable, inContainer, elm, body, html]);
-        test(slottable, [slottable, inContainer, elm, body, html]);
+        test(inContainer, [slotted, slottable, inContainer, elm, body, html]);
+        test(slottable, [slotted, slottable, inContainer, elm, body, html]);
         test(slotted, [slotted, slottable, inContainer, elm, body, html]);
-        test(component, [component, slottable, inContainer, elm, body, html]);
-        test(inComponent, [
-            inComponentInner,
-            inComponent,
+        test(
             component,
-            slottable,
-            inContainer,
-            elm,
-            body,
-            html,
-        ]);
-        test(inComponentInner, [
-            inComponentInner,
+            [component, slottable, inContainer, elm, body, html],
+            [slottable, inContainer, elm, body, html]
+        );
+        test(
             inComponent,
-            component,
-            slottable,
-            inContainer,
-            elm,
-            body,
-            html,
-        ]);
-        test(slotWrapper, [slotted, slotWrapper, slottable, inContainer, elm, body, html]);
-        test(inSlottable, [inSlottableInner, inSlottable, slottable, inContainer, elm, body, html]);
+            [inComponentInner, inComponent, component, slottable, inContainer, elm, body, html],
+            [inComponentInner, slottable, inContainer, elm, body, html]
+        );
+        test(
+            inComponentInner,
+            [inComponentInner, inComponent, component, slottable, inContainer, elm, body, html],
+            [inComponentInner, slottable, inContainer, elm, body, html]
+        );
+        test(
+            slotWrapper,
+            [slotWrapper, slottable, inContainer, elm, body, html],
+            [slotted, slotWrapper, slottable, inContainer, elm, body, html]
+        );
+        test(inSlottable, [inSlottable, slottable, inContainer, elm, body, html]);
         test(inSlottableInner, [
             inSlottableInner,
             inSlottable,
