@@ -22,17 +22,17 @@ describe('ShadowRoot.elementsFromPoint', () => {
             const div = document.createElement('div');
             div.attachShadow({ mode: 'open' }).innerHTML = '<div>foo</div>';
             document.body.appendChild(div);
-            const { left, right } = div.shadowRoot.querySelector('div').getBoundingClientRect();
-            const elements = div.shadowRoot.elementsFromPoint(left, right);
+            const { left, top } = div.shadowRoot.querySelector('div').getBoundingClientRect();
+            const elements = div.shadowRoot.elementsFromPoint(left, top);
             document.body.removeChild(div);
             return elements.length === 1;
         })();
     });
 
     function test(element, expectedElements, safariExpectedElements) {
-        const { left, right, width, height } = element.getBoundingClientRect();
+        const { left, top, width, height } = element.getBoundingClientRect();
         const rootNode = element.getRootNode();
-        const elementsFromPoint = rootNode.elementsFromPoint(left + width / 2, right + height / 2);
+        const elementsFromPoint = rootNode.elementsFromPoint(left + width / 2, top + height / 2);
 
         if (hasFirefoxNativeShadowBehavior) {
             expectedElements = expectedElements.filter(
@@ -45,8 +45,6 @@ describe('ShadowRoot.elementsFromPoint', () => {
         }
 
         expect(elementsFromPoint).toEqual(expectedElements);
-        // const elementFromPoint = rootNode.elementFromPoint(x, y);
-        // expect(elementFromPoint).toEqual(expectedElementsFromPoint[0]);
     }
 
     it('has correct elementsFromPoint and elementFromPoint', () => {
@@ -74,7 +72,7 @@ describe('ShadowRoot.elementsFromPoint', () => {
         test(
             component,
             [component, slottable, inContainer, elm, body, html],
-            [slottable, inContainer, elm, body, html]
+            !process.env.NATIVE_SHADOW && [slottable, inContainer, elm, body, html]
         );
         test(
             inComponent,
