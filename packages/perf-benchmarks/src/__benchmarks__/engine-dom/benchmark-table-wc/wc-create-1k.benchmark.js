@@ -24,7 +24,7 @@ benchmark(`benchmark-table-wc/create/1k`, () => {
 
     run(() => {
         const store = new Store();
-        store.run();
+        store.run100();
         tableElement.rows = store.data;
     });
 

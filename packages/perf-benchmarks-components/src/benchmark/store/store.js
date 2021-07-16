@@ -113,6 +113,11 @@ export default class Store {
         this.selected = undefined;
     }
 
+    run100() {
+        this.data = this.buildData(100);
+        this.selected = undefined;
+    }
+
     add() {
         this.data = this.data.concat(this.buildData(1000));
     }
