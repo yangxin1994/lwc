@@ -330,14 +330,10 @@ export function installWireAdapters(vm: VM) {
                 fieldNameOrMethod,
                 wireDef
             );
-            const hasDynamicParams = wireDef.dynamic.length > 0;
+
             ArrayPush.call(wiredConnecting, () => {
                 connector.connect();
-                if (hasDynamicParams) {
-                    Promise.resolve().then(computeConfigAndUpdate);
-                } else {
-                    computeConfigAndUpdate();
-                }
+                computeConfigAndUpdate();
             });
             ArrayPush.call(wiredDisconnecting, () => {
                 connector.disconnect();
